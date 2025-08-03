@@ -3,7 +3,7 @@
 Sometimes you want to create a small data model, and the common approaches seem overly complicated.
 In those cases `StateModel` may be for you.
 
-The main is to flatten models into a very simple, generic structure, so that you can use a standard database without modifications.
+The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without modifications.
 Just define your models in code, and don't worry about tables, schemas, or any of the low-level details.
 Then use your models like any other classes, while the model logic fetches all values directly from the database.
 In addition to the simple usage, `StateModel` even provides a simple mechanism to synchronize/merge databases.
