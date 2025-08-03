@@ -17,7 +17,7 @@ The idea is to identify each property by a unique "path", which consists of:
 This tuple (ModelID, InstanceID, PropertyID) is used to uniquely identify the value of a property, and everything is stored based on these identifiers.
 This means that a database has essentially only two primary functions: 
 
-```
+```swift
 func get(_ path: Path) -> Value?
 func set(_ value: Value, for path: Path)
 ```
