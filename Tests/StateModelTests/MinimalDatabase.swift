@@ -22,24 +22,14 @@ final class MinimalDatabase<Key>: Database where Key: PathKey {
 
     // MARK: Instances
 
-    /**
-     Get all instances of a given model type that fullfil the predicate.
-     - Parameter predicate: The filter function to apply.
-     - Returns: The instances in the database that match the predicate
-     */
-    func select<Instance>(where predicate: (Instance) -> Bool) -> [Instance] where Instance: ModelProtocol, Instance.Storage == MinimalDatabase<Key> {
-        cache.compactMap { (path, value) in
-            guard path.model == Instance.modelId,
-                  path.property == Key.instanceId,
-                  let status = value as? InstanceStatus,
-                  status == .created else {
+    public func select<T>(modelId: ModelKey, propertyId: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: InstanceStatus) -> T?) -> [T] {
+        cache.compactMap { (path, value) -> T? in
+            guard path.model == modelId,
+                  path.property == propertyId,
+                  let value = value as? InstanceStatus else {
                 return nil
             }
-            let instance = Instance(database: self, id: path.instance)
-            guard predicate(instance) else {
-                return nil
-            }
-            return instance
+            return predicate(path.instance, value)
         }
     }
 }

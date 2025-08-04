@@ -45,19 +45,14 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Instances
 
-    public func select<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.Storage == InMemoryDatabase {
-        cache.compactMap { (path, value) in
-            guard path.model == Instance.modelId,
-                  path.property == PropertyKey.instanceId,
-                  let status: InstanceStatus = decode(value.data),
-                  status == .created else {
+    public func select<T, V>(modelId: ModelKey, propertyId: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
+        cache.compactMap { (path, value) -> T? in
+            guard path.model == modelId,
+                  path.property == propertyId,
+                  let value: V = decode(value.data) else {
                 return nil
             }
-            let instance = Instance(database: self, id: path.instance)
-            guard predicate(instance) else {
-                return nil
-            }
-            return instance
+            return predicate(path.instance, value)
         }
     }
 

@@ -33,14 +33,43 @@ public protocol Database: AnyObject {
     func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue
 
     /**
+     Provide specific properties in the database to a conversion function.
+
+     This function must provide all properties in the database that match a model id and a property id,
+     and that are of type `InstanceStatus`. This function is used to select all instances of a model with specific properties.
+     - Parameter modelId: The model id to match
+     - Parameter propertyId: The property id to match
+     - Parameter predicate: The conversion function to call for each result of the search
+     - Parameter instanceId: The instance id of the path that contained the `status`
+     - Parameter status: The instance status of the path.
+     - Returns: The list of all search results that were returned by the `predicate`
+     */
+    func select<T>(
+        modelId: ModelKey,
+        propertyId: PropertyKey,
+        where predicate: (_ instanceId: InstanceKey, _ status: InstanceStatus) -> T?
+    ) -> [T]
+}
+
+extension Database {
+
+    /**
      Get all instances of a given model type that fullfil the predicate.
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
-    func select<Instance>(where predicate: (Instance) -> Bool) -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self
-}
-
-extension Database {
+    public func select<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.Storage == Self {
+        return select(modelId: Instance.modelId, propertyId: PropertyKey.instanceId) { instanceId, status in
+            guard status == .created else {
+                return nil
+            }
+            let instance = Instance(database: self, id: instanceId)
+            guard predicate(instance) else {
+                return nil
+            }
+            return instance
+        }
+    }
 
     /**
      Update a property only when it changes, to prevent unnecessary updates.
