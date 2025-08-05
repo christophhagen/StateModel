@@ -57,7 +57,8 @@ public struct Reference<Value> where Value: ModelProtocol {
             let wrapper = instance[keyPath: storageKeyPath]
             let propertyPath = EnclosingSelf.Storage.KeyPath(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
             // First get the id of the referenced instance
-            guard let referenceId: Value.Storage.InstanceKey = instance.database.get(propertyPath) else {
+
+            guard let referenceId: Value.Storage.InstanceKey? = instance.database.get(propertyPath, of: Value.Storage.InstanceKey?.self), let referenceId else {
                 return nil
             }
             // Then get the instance itself
