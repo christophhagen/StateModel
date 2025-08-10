@@ -121,8 +121,25 @@ Internally, the list just manages an array of instance ids, and the model object
 
 In addition to the definition of the models, you need to make a few choices for the database, which depend on your use case.
 First you have to select an implementation that conforms to `Database`.
-There is currently only one example implementation provided, which keeps all data in memory.
+
+### Database implementations
+
+#### `InMemoryDatabase`
+There is currently only one example implementation provided with `StateModel`, which keeps all data in memory.
+
+#### SQLite Datase
+
+An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
+It stores the supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
+The current implementation restricts the [key paths](#paths) to integers.
+
+#### Custom implementation
+
 You can also [write your own database](#database-implementation) by conforming to `Database`.
+This gives you all the freedom to store the data in an appropriate format, implement additional features, and apply performance optimizations.
+
+### Paths
+
 If you choose an existing implementation, then it may have already made decisions on certain implementation details, 
 otherwise you have to decide a few details.
 
@@ -131,25 +148,25 @@ A path consists of three components: Model ID, Instance ID, Property ID.
 You can think of a path as `model.instance.property`, e.g. `customer.alice.age` (although IDs are recommended to be integers).
 You must select appropriate data types to use for each component.
 
-### Model Key Type
+#### Model Key Type
 
 This type defines the data type to use for the `modelId` which uniquely identifies each model class.
 The recommended type is `UInt8`, which allows you to create 256 different model classes. Select a different model type to allow more, or if you have specific requirements for the ids.
 
-### Instance Key Type
+#### Instance Key Type
 
 This type is used for the unique ids of model instances, e.g. the `id` property of every object.
 Its size determines the number of unique instances you can store in the database.
 The recommendation is `UInt32`, which allows you to create 4,294,967,296 different instances for each model class.
 Note that objects of different types are allowed to use the same id, since they will have different `modelId`s.
 
-### Property Key Type
+#### Property Key Type
 
 This type is used to uniquely identify each property of a model class.
 It's the value provided to `@Property`, `@Reference` and `@ReferenceList`.
 It should be sufficient to use `UInt8`, unless you have specific requirements about the id structure.
 
-### Storage efficiency
+#### Storage efficiency
 
 The data types of the three path components is important because each property value will be stored using its own path.
 This means that the appropriate selection of the data type can severely affect database performance.
