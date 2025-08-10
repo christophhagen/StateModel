@@ -1,10 +1,8 @@
 import Testing
 @testable import StateModel
 
-@Test("Test property")
+@Test("Property get/set")
 func testProperty() async throws {
-    // Write your test here and use APIs like `#expect(...)` to check expected conditions.
-
     let database = TestDatabase()
 
     let instanceA: TestModel = database.create(id: 123)
