@@ -370,26 +370,21 @@ final class MinimalDatabase<Key>: Database where Key: PathKey {
         cache[path] = value
     }
 
-    func select<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.Storage == MinimalDatabase<Key> {
-        cache.compactMap { (path, value) in
-            guard path.model == Instance.modelId,
-                  path.property == Key.instanceId,
-                  let status = value as? InstanceStatus,
-                  status == .created else {
+    func select<T>(modelId: ModelKey, propertyId: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: InstanceStatus) -> T?) -> [T] {
+        cache.compactMap { (path, value) -> T? in
+            guard path.model == modelId,
+                  path.property == propertyId,
+                  let value = value as? InstanceStatus else {
                 return nil
             }
-            let instance = Instance(database: self, id: path.instance)
-            guard predicate(instance) else {
-                return nil
-            }
-            return instance
+            return predicate(path.instance, value)
         }
     }
 }
 ```
 
 Isn't it great that this simple database can already handle all types of models?
-Based on this template, you can easily implement a history, synchronization, persistance to disk, any many optimizations based on specific paths or properties.
+Based on this template, you can easily implement caching, a history, synchronization, persistance to disk, and many optimizations based on specific paths or properties.
 Go nuts!
 
 ## Roadmap
