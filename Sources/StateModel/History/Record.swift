@@ -17,14 +17,14 @@ public struct Record<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, Prope
     public let path: KeyPath
 
     /// The sample containing the information about the modified property
-    public let sample: Sample
+    public let sample: EncodedSample
 
     /**
      Create a new record.
      - Parameter path: The path to the property that was modified
      - Parameter sample: The sample containing the information about the modified property
      */
-    public init(path: KeyPath, sample: Sample) {
+    public init(path: KeyPath, sample: EncodedSample) {
         self.path = path
         self.sample = sample
     }

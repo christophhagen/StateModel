@@ -9,7 +9,7 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     public typealias Record = StateModel.Record<ModelKey, InstanceKey, PropertyKey>
 
-    private var cache: [KeyPath: Sample] = [:]
+    private var cache: [KeyPath: EncodedSample] = [:]
 
     private var history: [Record] = []
 
@@ -37,7 +37,7 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
     }
 
     public func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
-        let sample = Sample(data: encode(value))
+        let sample = EncodedSample(data: encode(value))
         // TODO: Prevent duplicates?
         cache[path] = sample
         history.append(Record(path: path, sample: sample))
