@@ -42,26 +42,11 @@ public protocol ModelProtocol: AnyObject {
 
 extension ModelProtocol {
 
-    /// The path to store or retrieve the instance
-    var instancePath: Storage.KeyPath {
-        Self.instance(id: id)
-    }
-
-    /**
-     Access the path to a specific instance
-     */
-    static func instance(id: Storage.InstanceKey) -> Storage.KeyPath {
-        .init(model: modelId, instance: id)
-    }
-}
-
-extension ModelProtocol {
-
     /**
      Retrieve the current status of the instance from the database.
      */
     public var status: InstanceStatus {
-        database.get(instancePath) ?? .created
+        database.get(model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId) ?? .created
     }
 
     /**
@@ -70,7 +55,7 @@ extension ModelProtocol {
      This function has no effect for deleted and non-existant instances.
      */
     public func delete() {
-        guard let status: InstanceStatus = database.get(instancePath), status == .created else { return }
+        guard let status: InstanceStatus = database.get(model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId), status == .created else { return }
         database.delete(self)
     }
 
@@ -81,6 +66,6 @@ extension ModelProtocol {
      */
     public func insert() {
         guard status == .deleted else { return }
-        database.set(InstanceStatus.created, for: instancePath)
+        database.set(InstanceStatus.created, model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId)
     }
 }

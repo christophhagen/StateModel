@@ -57,15 +57,13 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.Storage.Pro
     ) -> List<Value> where EnclosingSelf.Storage == Value.Storage {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
-            let propertyPath = EnclosingSelf.Storage.KeyPath(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
             // First get the id of the referenced instance
-            let references: [Value.Storage.InstanceKey] = instance.database.get(propertyPath) ?? []
+            let references: [Value.Storage.InstanceKey] = instance.database.get(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id) ?? []
             return .init(database: instance.database, references: references)
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]
-            let propertyPath = EnclosingSelf.Storage.KeyPath(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
-            instance.database.set(newValue.references, for: propertyPath)
+            instance.database.set(newValue.references, model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
         }
     }
 }

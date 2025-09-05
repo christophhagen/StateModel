@@ -29,26 +29,28 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Properties
 
-    public func get<Value>(_ path: KeyPath) -> Value? where Value: Codable {
+    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: Codable {
+        let path = Path(model: model, instance: instance, property: property)
         guard let raw = cache[path] else {
             return nil
         }
         return decode(raw.data)
     }
 
-    public func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
+    public func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: Codable {
         let sample = EncodedSample(data: encode(value))
         // TODO: Prevent duplicates?
+        let path = Path(model: model, instance: instance, property: property)
         cache[path] = sample
         history.append(Record(path: path, sample: sample))
     }
 
     // MARK: Instances
 
-    public func select<T, V>(modelId: ModelKey, propertyId: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
+    public func select<T, V>(model: ModelKey, property: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
         cache.compactMap { (path, value) -> T? in
-            guard path.model == modelId,
-                  path.property == propertyId,
+            guard path.model == model,
+                  path.property == property,
                   let value: V = decode(value.data) else {
                 return nil
             }

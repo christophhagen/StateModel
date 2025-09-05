@@ -55,10 +55,8 @@ public struct Reference<Value> where Value: ModelProtocol {
     ) -> Value? where EnclosingSelf.Storage == Value.Storage {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
-            let propertyPath = EnclosingSelf.Storage.KeyPath(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
             // First get the id of the referenced instance
-
-            guard let referenceId: Value.Storage.InstanceKey? = instance.database.get(propertyPath, of: Value.Storage.InstanceKey?.self), let referenceId else {
+            guard let referenceId: Value.Storage.InstanceKey? = instance.database.get(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id, of: Value.Storage.InstanceKey?.self), let referenceId else {
                 return nil
             }
             // Then get the instance itself
@@ -73,10 +71,9 @@ public struct Reference<Value> where Value: ModelProtocol {
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]
-            let propertyPath = EnclosingSelf.Storage.KeyPath(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
             // It is possible to assign an object that is not stored in the database.
             // In this case the object would be created when the property is accessed.
-            instance.database.set(newValue?.id, for: propertyPath)
+            instance.database.set(newValue?.id, model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
         }
     }
 }

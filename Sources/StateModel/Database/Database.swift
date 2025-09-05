@@ -20,34 +20,38 @@ public protocol Database: AnyObject {
 
     /**
      Get the value for a specific property.
-     - Parameter path: The unique identifier of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      - Returns: The value of the property, if one exists
      */
-    func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue
+    func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter path: The unique identifier of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      */
-    func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue
+    func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue
 
     /**
      Provide specific properties in the database to a conversion function.
 
      This function must provide all properties in the database that match a model id and a property id,
      and that are of type `InstanceStatus`. This function is used to select all instances of a model with specific properties.
-     - Parameter modelId: The model id to match
-     - Parameter propertyId: The property id to match
+     - Parameter model: The model id to match
+     - Parameter property: The property id to match
      - Parameter predicate: The conversion function to call for each result of the search
-     - Parameter instanceId: The instance id of the path that contained the `status`
+     - Parameter instance: The instance id of the path that contained the `status`
      - Parameter status: The instance status of the path.
      - Returns: The list of all search results that were returned by the `predicate`
      */
     func select<T>(
-        modelId: ModelKey,
-        propertyId: PropertyKey,
-        where predicate: (_ instanceId: InstanceKey, _ status: InstanceStatus) -> T?
+        model: ModelKey,
+        property: PropertyKey,
+        where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?
     ) -> [T]
 }
 
@@ -59,7 +63,7 @@ extension Database {
      - Returns: The instances in the database that match the predicate
      */
     public func select<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.Storage == Self {
-        return select(modelId: Instance.modelId, propertyId: PropertyKey.instanceId) { instanceId, status in
+        return select(model: Instance.modelId, property: PropertyKey.instanceId) { instanceId, status in
             guard status == .created else {
                 return nil
             }
@@ -72,24 +76,16 @@ extension Database {
     }
 
     /**
-     Update a property only when it changes, to prevent unnecessary updates.
-     */
-    public func update<Value>(_ value: Value, for path: KeyPath) where Value: Codable, Value: Equatable {
-        if let existing: Value = get(path), value == existing {
-            return
-        }
-        set(value, for: path)
-    }
-
-    /**
      Get the value for a specific property.
-     - Parameter path: The unique identifier of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      - Parameter type: The type of value to get
      - Returns: The value of the property, if one exists
      */
     @inline(__always)
-    public func get<Value>(_ keyPath: KeyPath, of type: Value.Type) -> Value? where Value: DatabaseValue {
-        get(keyPath)
+    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type) -> Value? where Value: DatabaseValue {
+        get(model: model, instance: instance, property: property)
     }
 
     // MARK: Instances
@@ -99,17 +95,8 @@ extension Database {
      - Returns: The instances in the database that are not deleted
      */
     @inline(__always)
-    func all<Instance>() -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self {
+    public func all<Instance>(of type: Instance.Type = Instance.self) -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self {
         select { _ in true }
-    }
-
-    /**
-     Get all instances of a given model type.
-     - Returns: The instances in the database that are not deleted
-     */
-    @inline(__always)
-    public func all<Instance>(of type: Instance.Type) -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self {
-        all()
     }
 
     /**
@@ -123,8 +110,7 @@ extension Database {
     }
 
     public func create<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.Storage == Self {
-        let path = KeyPath(model: Instance.modelId, instance: id)
-        set(InstanceStatus.created, for: path)
+        set(InstanceStatus.created, model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
         return .init(database: self, id: id)
     }
 
@@ -134,16 +120,14 @@ extension Database {
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
     public func get<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.Storage == Self {
-        let path = KeyPath(model: Instance.modelId, instance: id)
-        guard get(path, of: InstanceStatus.self) != nil else {
+        guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, of: InstanceStatus.self) != nil else {
             return nil
         }
         return .init(database: self, id: id)
     }
 
     public func active<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.Storage == Self {
-        let path = KeyPath(model: Instance.modelId, instance: id)
-        guard let status: InstanceStatus = get(path), status == .created else {
+        guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId), status == .created else {
             return nil
         }
         return .init(database: self, id: id)
@@ -162,7 +146,6 @@ extension Database {
      - Parameter instance: The instance to delete
      */
     public func delete<Instance>(_ instance: Instance) where Instance: ModelProtocol, Instance.Storage == Self {
-        let path = instance.instancePath
-        set(InstanceStatus.deleted, for: path)
+        set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
     }
 }
