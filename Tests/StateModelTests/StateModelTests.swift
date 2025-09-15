@@ -141,7 +141,7 @@ func testFilterModels() {
     model2.a = 15
     model3.a = 36
 
-    let below = database.select(TestModel.self) { $0.a > 10 }
+    let below = database.all(TestModel.self) { $0.a > 10 }
     #expect(below.count == 2)
     #expect(below.contains(model2))
     #expect(below.contains(model3))

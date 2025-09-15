@@ -10,7 +10,7 @@ public protocol ModelProtocol: AnyObject {
 
      It is necessary to couple each model implementation with a database, since it contains a reference to the database for updating.
      */
-    associatedtype Storage: Database
+    associatedtype Storage: DatabaseProtocol
 
     /**
      The unique ID of this model class when used in a key path.
@@ -42,11 +42,35 @@ public protocol ModelProtocol: AnyObject {
 
 extension ModelProtocol {
 
+    @inline(__always)
+    private func get<T: DatabaseValue>(_ property: Storage.PropertyKey) -> T? {
+        database.get(model: Self.modelId, instance: id, property: property)
+    }
+
+    @inline(__always)
+    private func getOrDefault<T: DatabaseValue & Defaultable>(_ property: Storage.PropertyKey) -> T {
+        database.get(model: Self.modelId, instance: id, property: property) ?? T.default
+    }
+
+    @inline(__always)
+    private func set<T: DatabaseValue>(_ value: T, for property: Storage.PropertyKey) {
+        database.set(value, model: Self.modelId, instance: id, property: property)
+    }
+
+    public func all(in database: Storage) -> [Self] {
+        database.all(model: Self.modelId) { instanceId, status in
+            guard status == .created else {
+                return nil
+            }
+            return Self(database: database, id: instanceId)
+        }
+    }
+
     /**
      Retrieve the current status of the instance from the database.
      */
     public var status: InstanceStatus {
-        database.get(model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId) ?? .created
+        self.get(Storage.PropertyKey.instanceId) ?? .created
     }
 
     /**
@@ -55,8 +79,8 @@ extension ModelProtocol {
      This function has no effect for deleted and non-existant instances.
      */
     public func delete() {
-        guard let status: InstanceStatus = database.get(model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId), status == .created else { return }
-        database.delete(self)
+        guard let status: InstanceStatus = get(Storage.PropertyKey.instanceId), status == .created else { return }
+        set(InstanceStatus.deleted, for: Storage.PropertyKey.instanceId)
     }
 
     /**
@@ -66,6 +90,6 @@ extension ModelProtocol {
      */
     public func insert() {
         guard status == .deleted else { return }
-        database.set(InstanceStatus.created, model: Self.modelId, instance: id, property: Storage.PropertyKey.instanceId)
+        set(InstanceStatus.created, for: Storage.PropertyKey.instanceId)
     }
 }

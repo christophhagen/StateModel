@@ -47,4 +47,4 @@
  print(instance.some) // prints "abc"
  ```
  */
-public typealias Model<S: Database> = BaseModel<S> & ModelProtocol
+public typealias Model<S: DatabaseProtocol> = BaseModel<S> & ModelProtocol

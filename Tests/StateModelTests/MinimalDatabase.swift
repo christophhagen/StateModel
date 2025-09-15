@@ -4,7 +4,7 @@ import StateModel
 /**
  A simple database implementation that only caches the latest values in memory
  */
-final class MinimalDatabase<Key>: Database where Key: PathKey {
+final class MinimalDatabase<Key>: DatabaseProtocol where Key: PathKey {
 
     typealias KeyPath = Path<Key, Key, Key>
 
@@ -24,10 +24,10 @@ final class MinimalDatabase<Key>: Database where Key: PathKey {
 
     // MARK: Instances
 
-    public func select<T>(model: ModelKey, property: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: InstanceStatus) -> T?) -> [T] {
+    public func all<T>(model: Key, where predicate: (_ instanceId: Key, _ value: InstanceStatus) -> T?) -> [T] {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
-                  path.property == property,
+                  path.property == PropertyKey.instanceId,
                   let value = value as? InstanceStatus else {
                 return nil
             }

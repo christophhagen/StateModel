@@ -1,9 +1,11 @@
 import Foundation
 
 /**
- A simple database implementation that only caches the latest values in memory
+ A simple database implementation that only caches the latest values in memory.
+
+ This implementation does not provide a history, see ``InMemoryHistoryDatabase`` for an alternative.
  */
-public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: Database {
+public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: DatabaseProtocol {
 
     public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
 
@@ -47,10 +49,10 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Instances
 
-    public func select<T, V>(model: ModelKey, property: PropertyKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
+    public func all<T, V>(model: ModelKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
-                  path.property == property,
+                  path.property == PropertyKey.instanceId,
                   let value: V = decode(value.data) else {
                 return nil
             }

@@ -2,7 +2,7 @@
 /**
  A basic model to subclass which contains a database reference and an instance id.
  */
-open class BaseModel<Storage> where Storage: Database {
+open class BaseModel<Storage> where Storage: DatabaseProtocol {
 
     /// The reference to the model database to read and write property values
     public unowned let database: Storage
