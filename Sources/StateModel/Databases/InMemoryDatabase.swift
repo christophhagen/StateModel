@@ -15,6 +15,11 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     private var history: [Record] = []
 
+    /**
+     Create an empty database.
+     */
+    public override init() { }
+
     // MARK: Encoding
 
     private let encoder: JSONEncoder = .init()
