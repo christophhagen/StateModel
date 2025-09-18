@@ -6,55 +6,42 @@ import Foundation
 public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey> where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
     /// The database which is being edited
-    private unowned let database: HistoryDatabase<ModelKey,InstanceKey,PropertyKey>
-
-    /// The date at which the context was created
-    private var contextStartDate: Date
+    private unowned let database: Database<ModelKey,InstanceKey,PropertyKey>
 
     /// The modified values
     ///
     /// - Note: Contains only the most recent values of the edits
-    private var modifiedValues: [Path<ModelKey, InstanceKey, PropertyKey>: (value: Any, date: Date, setter: () -> Void)] = [:]
+    private var modifiedValues: [Path<ModelKey, InstanceKey, PropertyKey>: (value: Any, setter: () -> Void)] = [:]
 
-    init(database: HistoryDatabase<ModelKey,InstanceKey,PropertyKey>, date: Date) {
+    init(database: Database<ModelKey,InstanceKey,PropertyKey>) {
         self.database = database
-        self.contextStartDate = date
     }
 
     public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value : Decodable, Value : Encodable {
-        let previous: (value: Value, date: Date)? = database.get(model: model, instance: instance, property: property, at: contextStartDate)
-        guard let edited: (value: Value, date: Date) = getFromCache(model: model, instance: instance, property: property) else {
-            return previous?.value
+        if let edited: Value = getFromCache(model: model, instance: instance, property: property) {
+            return edited
 
         }
-        guard let previous else {
-            return edited.value
-        }
-        guard edited.date >= previous.date else {
-            return previous.value // Previous value is closer to requested date
-        }
-        return edited.value // Edited value is closer to requested date
+        return database.get(model: model, instance: instance, property: property)
     }
     
     public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value : Decodable, Value : Encodable {
-        let timeOfChange = Date()
         let setter: () -> Void = { [weak self] in
-            self?.database.set(value, model: model, instance: instance, property: property, at: timeOfChange)
+            self?.database.set(value, model: model, instance: instance, property: property)
         }
         let path = Path(model: model, instance: instance, property: property)
         // Note: Previous edits are overwritten
-        modifiedValues[path] = (value, timeOfChange, setter)
+        modifiedValues[path] = (value, setter)
     }
     
     public override func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
         var handledIds: Set<InstanceKey> = []
-        let existing: [T] = database.all(model: model, at: nil) { instance, status, timestamp in
+        let existing: [T] = database.all(model: model) { instance, status in
             handledIds.insert(instance)
-            guard let edited: (value: InstanceStatus, date: Date) = getFromCache(model: model, instance: instance, property: PropertyKey.instanceId),
-                  edited.date >= timestamp else {
-                return predicate(instance, status)
+            if let edited: InstanceStatus = getFromCache(model: model, instance: instance, property: PropertyKey.instanceId) {
+                return predicate(instance, edited)
             }
-            return predicate(instance, edited.value)
+            return predicate(instance, status)
         }
 
         // Find additional instances added to the context
@@ -70,14 +57,11 @@ public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<Mo
         return existing + additions
     }
 
-    private func getFromCache<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
+    private func getFromCache<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value : Decodable, Value : Encodable {
         guard let changed = modifiedValues[Path(model: model, instance: instance, property: property)] else {
             return nil
         }
-        guard let value = changed.value as? Value else {
-            return nil
-        }
-        return (value, changed.date)
+        return changed.value as? Value
     }
 
     /**
@@ -88,7 +72,6 @@ public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<Mo
             value.setter()
         }
         discardChanges()
-        contextStartDate = Date()
     }
 
     public func discardChanges() {

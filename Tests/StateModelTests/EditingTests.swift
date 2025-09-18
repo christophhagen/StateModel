@@ -56,7 +56,34 @@ struct EditingContextTests {
         #expect(aInDatabase.a == 43)
         #expect(aInDatabase.b == 1338)
 
-        // Check that context is unaffected
+        // Check that context is updated
+        #expect(aInContext.a == 43)
+        #expect(aInContext.b == 1338)
+    }
+
+    @Test("Modify outside of snapshot context")
+    func testEditPropertyOutsideOfCurrentContext() async throws {
+        let database = TestHistoryDatabase()
+
+        let aInDatabase: TestModel = database.create(id: 123)
+        aInDatabase.a = 42
+        aInDatabase.b = 1337
+
+        let context = database.createEditingContextWithCurrentState()
+        let aInContext: TestModel! = context.active(id: 123)
+        #expect(aInContext != nil)
+        #expect(aInContext.a == 42)
+        #expect(aInContext.b == 1337)
+
+        try await sleep(ms: 50)
+
+        aInDatabase.a = 43
+        aInDatabase.b = 1338
+
+        #expect(aInDatabase.a == 43)
+        #expect(aInDatabase.b == 1338)
+
+        // Check that context is not affected
         #expect(aInContext.a == 42)
         #expect(aInContext.b == 1337)
     }
