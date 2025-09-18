@@ -1,13 +1,13 @@
 import Foundation
 
-extension DatabaseProtocol {
+extension Database {
 
     /**
      Get all instances of a given model type that fullfil the predicate.
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
-    public func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.Storage == Self {
+    public func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         return all(model: Instance.modelId) { instanceId, status in
             guard status == .created else {
                 return nil
@@ -53,7 +53,7 @@ extension DatabaseProtocol {
      - Returns: The instances in the database that are not deleted
      */
     @inline(__always)
-    public func all<Instance>(of type: Instance.Type = Instance.self) -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self {
+    public func all<Instance>(of type: Instance.Type = Instance.self) -> [Instance] where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         all { _ in true }
     }
 
@@ -63,11 +63,21 @@ extension DatabaseProtocol {
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
-    func all<Instance>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] where Instance: ModelProtocol, Instance.Storage == Self {
+    func all<Instance>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         all(where: predicate)
     }
 
-    public func create<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.Storage == Self {
+    /**
+     Create a new instance.
+
+     This function will set the instance status of the provided id to `created`,
+     and return the instance.
+
+     - Parameter id: The instance id
+     - Parameter type: The type of model to create.
+     - Returns: A new model instance of the specified type with the given id.
+     */
+    public func create<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         set(InstanceStatus.created, model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
         return .init(database: self, id: id)
     }
@@ -77,14 +87,20 @@ extension DatabaseProtocol {
      - Note: This function also returns instances that have previously been deleted.
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
-    public func get<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.Storage == Self {
+    public func get<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, of: InstanceStatus.self) != nil else {
             return nil
         }
         return .init(database: self, id: id)
     }
 
-    public func active<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.Storage == Self {
+    /**
+     Get an instance via its id, if it exists and is not deleted.
+     - Parameter id: The instance id
+     - Parameter type: The type of the model
+     - Returns: The existing, non-deleted instance, or `nil`
+     */
+    public func active<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId), status == .created else {
             return nil
         }
@@ -95,7 +111,7 @@ extension DatabaseProtocol {
      Get an existing instance of a model or create it.
      - Note: If an instance exists, but is deleted, it will still be returned.
      */
-    public func getOrCreate<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.Storage == Self {
+    public func getOrCreate<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         get(id: id) ?? create(id: id)
     }
 
@@ -103,7 +119,7 @@ extension DatabaseProtocol {
      Delete a specific instance.
      - Parameter instance: The instance to delete
      */
-    public func delete<Instance>(_ instance: Instance) where Instance: ModelProtocol, Instance.Storage == Self {
+    public func delete<Instance>(_ instance: Instance) where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
     }
 }

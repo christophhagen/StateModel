@@ -1,18 +1,25 @@
 import Foundation
 import StateModel
 
-enum ModelId: Int {
+enum ModelId: Int, Comparable, Codable {
+
+    static func < (lhs: ModelId, rhs: ModelId) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+    
     case testModel = 1
     case otherModel = 2
     case repeatedModel = 3
 }
 
-typealias TestDatabase = InMemoryDatabase<Int, Int, Int>
-typealias TestBaseModel = Model<TestDatabase>
+
+
+typealias TestDatabase = InMemoryDatabase<ModelId, Int, Int>
+typealias TestBaseModel = Model<ModelId, Int, Int>
 
 final class TestModel: TestBaseModel {
 
-    static let modelId = ModelId.testModel.rawValue
+    static let modelId = ModelId.testModel
 
     @Property(id: PropertyId.a)
     var a: Int
@@ -36,7 +43,7 @@ final class TestModel: TestBaseModel {
 
 final class NestedModel: TestBaseModel {
 
-    static let modelId = ModelId.otherModel.rawValue
+    static let modelId = ModelId.otherModel
 
     @Property(id: 1)
     var some: Int
@@ -45,7 +52,7 @@ final class NestedModel: TestBaseModel {
 
 final class RepeatedModel: TestBaseModel {
 
-    static let modelId = ModelId.repeatedModel.rawValue
+    static let modelId = ModelId.repeatedModel
 
     @Property(id: 1)
     var some: Int

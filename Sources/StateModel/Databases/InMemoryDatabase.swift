@@ -5,7 +5,7 @@ import Foundation
 
  This implementation does not provide a history, see ``InMemoryHistoryDatabase`` for an alternative.
  */
-public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: DatabaseProtocol {
+public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: Database<ModelKey, InstanceKey, PropertyKey> {
 
     public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
 
@@ -31,7 +31,7 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Properties
 
-    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: Codable {
+    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: Codable {
         let path = Path(model: model, instance: instance, property: property)
         guard let raw = cache[path] else {
             return nil
@@ -39,7 +39,7 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
         return decode(raw.data)
     }
 
-    public func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: Codable {
+    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: Codable {
         let sample = EncodedSample(data: encode(value))
         // TODO: Prevent duplicates?
         let path = Path(model: model, instance: instance, property: property)
@@ -49,11 +49,11 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Instances
 
-    public func all<T, V>(model: ModelKey, where predicate: (_ instanceId: InstanceKey, _ value: V) -> T?) -> [T] where V: Decodable {
+    public override func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
                   path.property == PropertyKey.instanceId,
-                  let value: V = decode(value.data) else {
+                  let value: InstanceStatus = decode(value.data) else {
                 return nil
             }
             return predicate(path.instance, value)

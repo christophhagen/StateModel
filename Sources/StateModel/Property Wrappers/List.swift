@@ -22,14 +22,14 @@ public struct List<Value>: RangeReplaceableCollection, RandomAccessCollection wh
     unowned let database: Value.Storage
 
     /// The instance ids of the objects in the list
-    private(set) var references: [Value.Storage.InstanceKey]
+    private(set) var references: [Value.InstanceKey]
 
     /**
      Create a list.
      - Parameter database: The reference to the database
      - Parameter references: The instance ids of the objects in the list
      */
-    init(database: Value.Storage, references: [Value.Storage.InstanceKey] = []) {
+    init(database: Value.Storage, references: [Value.InstanceKey] = []) {
         self.database = database
         self.references = references
     }

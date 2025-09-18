@@ -15,7 +15,7 @@
 public struct Reference<Value> where Value: ModelProtocol {
 
     /// The unique id of the property for the model
-    let id: Value.Storage.PropertyKey
+    let id: Value.PropertyKey
 
     /**
      The wrapped value will be queried from the database using the subscript.
@@ -31,14 +31,14 @@ public struct Reference<Value> where Value: ModelProtocol {
      Create a new property with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init(id: Value.Storage.PropertyKey) {
+    public init(id: Value.PropertyKey) {
         self.id = id
     }
     /**
      Create a new property with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.Storage.PropertyKey {
+    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.PropertyKey {
         self.id = id.rawValue
     }
 
@@ -52,11 +52,12 @@ public struct Reference<Value> where Value: ModelProtocol {
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value?>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Reference<Value>>
-    ) -> Value? where EnclosingSelf.Storage == Value.Storage {
+    ) -> Value? where EnclosingSelf.ModelKey == Value.ModelKey, EnclosingSelf.InstanceKey == Value.InstanceKey, EnclosingSelf.PropertyKey == Value.PropertyKey {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
-            guard let referenceId: Value.Storage.InstanceKey? = instance.database.get(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id, of: Value.Storage.InstanceKey?.self), let referenceId else {
+            guard let referenceId = instance.get(wrapper.id, of: Value.InstanceKey?.self),
+                  let referenceId else {
                 return nil
             }
             // Then get the instance itself
@@ -73,7 +74,7 @@ public struct Reference<Value> where Value: ModelProtocol {
             let wrapper = instance[keyPath: storageKeyPath]
             // It is possible to assign an object that is not stored in the database.
             // In this case the object would be created when the property is accessed.
-            instance.database.set(newValue?.id, model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
+            instance.set(newValue?.id, for: wrapper.id)
         }
     }
 }

@@ -12,10 +12,10 @@
  ```
  */
 @propertyWrapper
-public struct ReferenceList<Value> where Value: ModelProtocol, Value.Storage.PropertyKey: DatabaseValue {
+public struct ReferenceList<Value> where Value: ModelProtocol, Value.PropertyKey: DatabaseValue {
 
     /// The unique id of the property for the model
-    let id: Value.Storage.PropertyKey
+    let id: Value.PropertyKey
 
     /**
      The wrapped value will be queried from the database using the subscript.
@@ -31,7 +31,7 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.Storage.Pro
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init(id: Value.Storage.PropertyKey) {
+    public init(id: Value.PropertyKey) {
         self.id = id
     }
 
@@ -39,7 +39,7 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.Storage.Pro
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.Storage.PropertyKey {
+    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.PropertyKey {
         self.id = id.rawValue
     }
 
@@ -54,16 +54,16 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.Storage.Pro
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, List<Value>>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, ReferenceList<Value>>
-    ) -> List<Value> where EnclosingSelf.Storage == Value.Storage {
+    ) -> List<Value> where EnclosingSelf.ModelKey == Value.ModelKey, EnclosingSelf.InstanceKey == Value.InstanceKey, EnclosingSelf.PropertyKey == Value.PropertyKey {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
-            let references: [Value.Storage.InstanceKey] = instance.database.get(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id) ?? []
+            let references: [Value.InstanceKey] = instance.get(wrapper.id) ?? []
             return .init(database: instance.database, references: references)
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]
-            instance.database.set(newValue.references, model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
+            instance.set(newValue.references, for: wrapper.id)
         }
     }
 }

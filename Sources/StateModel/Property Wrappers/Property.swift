@@ -104,14 +104,14 @@ public struct Property<Value: DatabaseValue, PropertyKey: PropertyKeyType> {
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Property<Value, PropertyKey>>
-    ) -> Value where EnclosingSelf.Storage.PropertyKey == PropertyKey {
+    ) -> Value where EnclosingSelf.PropertyKey == PropertyKey {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
-            return instance.database.get(model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id) ?? wrapper.defaultValue
+            return instance.get(wrapper.id) ?? wrapper.defaultValue
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]
-            instance.database.set(newValue, model: EnclosingSelf.modelId, instance: instance.id, property: wrapper.id)
+            instance.set(newValue, for: wrapper.id)
         }
     }
 }

@@ -5,19 +5,24 @@ import Foundation
  */
 public protocol ModelProtocol: AnyObject {
 
-    /**
-     The database type to use with this model.
+    /// The type used to uniquely identify the model
+    associatedtype ModelKey: ModelKeyType
 
-     It is necessary to couple each model implementation with a database, since it contains a reference to the database for updating.
-     */
-    associatedtype Storage: DatabaseProtocol
+    /// The type used to uniquely identify each instance of the model
+    associatedtype InstanceKey: InstanceKeyType
+
+    /// The type used to uniquely identify the properties of the model
+    associatedtype PropertyKey: PropertyKeyType
+
+    /// The database suitable to store data of the model
+    typealias Storage = Database<ModelKey, InstanceKey, PropertyKey>
 
     /**
      The unique ID of this model class when used in a key path.
 
      The model id is the first part of a key path.
      */
-    static var modelId: Storage.ModelKey { get }
+    static var modelId: ModelKey { get }
 
     /**
      The unique id of the instance.
@@ -25,39 +30,34 @@ public protocol ModelProtocol: AnyObject {
      This id must be unique among all instances of the type.
      The id is used as the second part of the key path.
      */
-    var id: Storage.InstanceKey { get }
+    var id: InstanceKey { get }
 
     /**
      A reference to the database where the model is persisted.
 
      This reference should be `unowned` to not create retain cycles.
      */
-    var database: Storage { get }
+    var database: Database<ModelKey, InstanceKey, PropertyKey> { get }
 
     /**
      Create a new instance.
      */
-    init(database: Storage, id: Storage.InstanceKey)
+    init(database: Database<ModelKey, InstanceKey, PropertyKey>, id: InstanceKey)
 }
 
 extension ModelProtocol {
 
     @inline(__always)
-    private func get<T: DatabaseValue>(_ property: Storage.PropertyKey) -> T? {
+    func get<T: DatabaseValue>(_ property: PropertyKey, of type: T.Type = T.self) -> T? {
         database.get(model: Self.modelId, instance: id, property: property)
     }
 
     @inline(__always)
-    private func getOrDefault<T: DatabaseValue & Defaultable>(_ property: Storage.PropertyKey) -> T {
-        database.get(model: Self.modelId, instance: id, property: property) ?? T.default
-    }
-
-    @inline(__always)
-    private func set<T: DatabaseValue>(_ value: T, for property: Storage.PropertyKey) {
+    func set<T: DatabaseValue>(_ value: T, for property: PropertyKey, of type: T.Type = T.self) {
         database.set(value, model: Self.modelId, instance: id, property: property)
     }
 
-    public func all(in database: Storage) -> [Self] {
+    public func all(in database: Database<ModelKey, InstanceKey, PropertyKey>) -> [Self] {
         database.all(model: Self.modelId) { instanceId, status in
             guard status == .created else {
                 return nil
@@ -70,7 +70,7 @@ extension ModelProtocol {
      Retrieve the current status of the instance from the database.
      */
     public var status: InstanceStatus {
-        self.get(Storage.PropertyKey.instanceId) ?? .created
+        self.get(PropertyKey.instanceId) ?? .created
     }
 
     /**
@@ -79,8 +79,8 @@ extension ModelProtocol {
      This function has no effect for deleted and non-existant instances.
      */
     public func delete() {
-        guard let status: InstanceStatus = get(Storage.PropertyKey.instanceId), status == .created else { return }
-        set(InstanceStatus.deleted, for: Storage.PropertyKey.instanceId)
+        guard let status: InstanceStatus = get(PropertyKey.instanceId), status == .created else { return }
+        set(InstanceStatus.deleted, for: PropertyKey.instanceId)
     }
 
     /**
@@ -90,6 +90,6 @@ extension ModelProtocol {
      */
     public func insert() {
         guard status == .deleted else { return }
-        set(InstanceStatus.created, for: Storage.PropertyKey.instanceId)
+        set(InstanceStatus.created, for: PropertyKey.instanceId)
     }
 }
