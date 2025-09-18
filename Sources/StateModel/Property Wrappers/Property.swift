@@ -40,7 +40,7 @@ public struct Property<Value: DatabaseValue, PropertyKey: PropertyKeyType> {
      The wrapped value will be queried from the database using the subscript.
      - Warning: Directly accessing the property will cause a `fatalError`, since the wrapper requires access to the database reference of the enclosing model.
      */
-    @available(*, unavailable, message: "@Property can only used within models that provide a database reference")
+    @available(*, unavailable, message: "@Property can only be used within models that provide a database reference")
     public var wrappedValue: Value {
         get { fatalError() }
         set { fatalError() }

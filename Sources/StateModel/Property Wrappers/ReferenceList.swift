@@ -7,22 +7,22 @@
      static let modelId = 1
 
      @ReferenceList(id: 1)
-     var list: List<Nested>
+     var list: [Nested]
  }
  ```
  */
 @propertyWrapper
-public struct ReferenceList<Value> where Value: ModelProtocol, Value.PropertyKey: DatabaseValue {
+public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProtocol, S.Element.PropertyKey: DatabaseValue {
 
     /// The unique id of the property for the model
-    let id: Value.PropertyKey
+    let id: S.Element.PropertyKey
 
     /**
      The wrapped value will be queried from the database using the subscript.
      - Warning: Directly accessing the property will cause a `fatalError`, since the wrapper requires access to the database reference of the enclosing model.
      */
-    @available(*, unavailable, message: "@ReferenceList can only used within models that provide a database reference")
-    public var wrappedValue: List<Value> {
+    @available(*, unavailable, message: "@ReferenceList can only be used within models that provide a database reference")
+    public var wrappedValue: S {
         get { fatalError() }
         set { fatalError() }
     }
@@ -31,7 +31,7 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.PropertyKey
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init(id: Value.PropertyKey) {
+    public init(id: S.Element.PropertyKey) {
         self.id = id
     }
 
@@ -39,7 +39,7 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.PropertyKey
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.PropertyKey {
+    public init<T: RawRepresentable>(id: T) where T.RawValue == S.Element.PropertyKey {
         self.id = id.rawValue
     }
 
@@ -52,18 +52,18 @@ public struct ReferenceList<Value> where Value: ModelProtocol, Value.PropertyKey
      */
     public static subscript<EnclosingSelf: ModelProtocol>(
         _enclosingInstance instance: EnclosingSelf,
-        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, List<Value>>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, ReferenceList<Value>>
-    ) -> List<Value> where EnclosingSelf.ModelKey == Value.ModelKey, EnclosingSelf.InstanceKey == Value.InstanceKey, EnclosingSelf.PropertyKey == Value.PropertyKey {
+        wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, S>,
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, ReferenceList<S>>
+    ) -> S where EnclosingSelf.ModelKey == S.Element.ModelKey, EnclosingSelf.InstanceKey == S.Element.InstanceKey, EnclosingSelf.PropertyKey == S.Element.PropertyKey {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
-            let references: [Value.InstanceKey] = instance.get(wrapper.id) ?? []
-            return .init(database: instance.database, references: references)
+            let references: [S.Element.InstanceKey] = instance.get(wrapper.id) ?? []
+            return S.init(references.map { .init(database: instance.database, id: $0) })
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]
-            instance.set(newValue.references, for: wrapper.id)
+            instance.set(newValue.map { $0.id }, for: wrapper.id)
         }
     }
 }

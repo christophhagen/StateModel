@@ -31,7 +31,7 @@ final class TestModel: TestBaseModel {
     var ref: NestedModel?
 
     @ReferenceList(id: PropertyId.list)
-    var list: List<NestedModel>
+    var list: [NestedModel]
 
     enum PropertyId: Int {
         case a = 1
@@ -48,7 +48,6 @@ final class NestedModel: TestBaseModel {
     @Property(id: 1)
     var some: Int
 }
-
 
 final class RepeatedModel: TestBaseModel {
 
