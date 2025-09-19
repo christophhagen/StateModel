@@ -56,6 +56,15 @@ public struct Property<Value: DatabaseValue, PropertyKey: PropertyKeyType> {
     }
 
     /**
+     Create a new property with a default value derived from the wrapped type.
+     - Parameter id: The unique id of the property for the model
+     */
+    public init(id: PropertyKey) where Value: AnyOptional {
+        self.id = id
+        self.defaultValue = Value.nilValue
+    }
+
+    /**
      Create a new property with a default value specified via assignment
      - Parameter wrappedValue: The default value to use when the database contains no value for the property
      - Parameter id: The unique id of the property for the model
