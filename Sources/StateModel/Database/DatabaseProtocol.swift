@@ -58,3 +58,24 @@ public protocol DatabaseProtocol: AnyObject {
      */
     func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T]
 }
+
+extension DatabaseProtocol {
+
+    /**
+     Get the value for a specific property.
+     - Parameter path: The path of the property
+     - Returns: The value of the property, if one exists
+     */
+    func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
+        get(model: path.model, instance: path.instance, property: path.property)
+    }
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter path: The path of the property
+     */
+    func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
+        set(value, model: path.model, instance: path.instance, property: path.property)
+    }
+}
