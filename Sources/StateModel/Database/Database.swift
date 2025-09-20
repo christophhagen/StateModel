@@ -7,6 +7,11 @@
 open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
     /**
+     Create a database.
+     */
+    public init() { }
+
+    /**
      Get the value for a specific property.
      - Parameter model: The unique identifier of the model type
      - Parameter instance: The unique identifier of the instance
