@@ -66,7 +66,7 @@ extension DatabaseProtocol {
      - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
+    public func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
         get(model: path.model, instance: path.instance, property: path.property)
     }
 
@@ -75,7 +75,7 @@ extension DatabaseProtocol {
      - Parameter value: The new value to set for the property
      - Parameter path: The path of the property
      */
-    func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
+    public func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
         set(value, model: path.model, instance: path.instance, property: path.property)
     }
 }

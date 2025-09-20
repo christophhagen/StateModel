@@ -65,7 +65,7 @@ extension HistoryDatabaseProtocol {
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
+    public func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
         get(model: path.model, instance: path.instance, property: path.property, at: date)
     }
 
@@ -75,7 +75,7 @@ extension HistoryDatabaseProtocol {
      - Parameter path: The path of the property
      - Parameter date: The date with which the value is associated, `nil` indicates the current time.
      */
-    func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: DatabaseValue {
+    public func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: DatabaseValue {
         set(value, model: path.model, instance: path.instance, property: path.property, at: date)
     }
 }
