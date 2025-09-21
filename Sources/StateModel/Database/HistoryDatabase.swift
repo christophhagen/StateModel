@@ -3,6 +3,11 @@ import Foundation
 open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey>, HistoryDatabaseProtocol where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
     /**
+     Create a database.
+     */
+    public override init() { }
+
+    /**
      Get the value for a specific property.
      - Parameter model: The unique identifier of the model type
      - Parameter instance: The unique identifier of the instance
