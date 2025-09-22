@@ -66,7 +66,10 @@ open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,
      - Returns: The value of the property, if one exists
      */
     public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue {
-        get(model: model, instance: instance, property: property, at: nil)?.value
+        guard let data: (value: Value, date: Date) = get(model: model, instance: instance, property: property, at: nil) else {
+            return nil
+        }
+        return data.value
     }
 
     /**
