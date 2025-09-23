@@ -6,6 +6,8 @@
  */
 open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
+    public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
+
     /**
      Create a database.
      */
@@ -13,23 +15,19 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    open func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue {
+    open func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
         fatalError()
     }
 
     /**
      Set the value for a specific property.
-     - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
+     - Parameter path: The path of the property
      - Parameter property: The unique identifier of the property
      */
-    open func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue {
+    open func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
         fatalError()
     }
 

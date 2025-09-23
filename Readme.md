@@ -14,12 +14,12 @@ The idea is to identify each property by a unique "path", which consists of:
 - The id of the instance
 - The id of the property
 
-This tuple (ModelID, InstanceID, PropertyID) is used to uniquely identify the value of a property, and everything is stored based on these identifiers.
-This means that a database has essentially only two primary functions: `get()` and `set()`.
+This tuple (ModelID, InstanceID, PropertyID) is termed a "path" and used to uniquely identify the value of a property, and everything is stored based on these identifiers.
+This means that a database has essentially only two primary functions: `get()` and `set()`, which both operate on paths.
 In practice, we need one additional function to provide all instances of a specific model type, so the actual database interface looks like this:
 ```swift
-func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue
-func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue
+func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue
+func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue
 func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T]
 ```
 
@@ -415,13 +415,11 @@ final class MinimalDatabase<Key: PathKey>: Database<Key, Key, Key> {
 
     // MARK: Properties
 
-    override func get<Value>(model: Key, instance: Key, property: Key) -> Value? where Value: Codable {
-        let path = Path(model: model, instance: instance, property: property)
-        return cache[path] as? Value
+    override func get<Value>(_ path: KeyPath) -> Value? where Value: Codable {
+        cache[path] as? Value
     }
 
-    override func set<Value>(_ value: Value, model: Key, instance: Key, property: Key) where Value: Codable {
-        let path = Path(model: model, instance: instance, property: property)
+    override func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
         cache[path] = value
     }
 

@@ -17,19 +17,18 @@ public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<Mo
         self.database = database
     }
 
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value : Decodable, Value : Encodable {
-        if let edited: Value = getFromCache(model: model, instance: instance, property: property) {
+    public override func get<Value>(_ path: KeyPath) -> Value? where Value : Decodable, Value : Encodable {
+        if let edited: Value = getFromCache(path) {
             return edited
 
         }
-        return database.get(model: model, instance: instance, property: property)
+        return database.get(path)
     }
     
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value : Decodable, Value : Encodable {
+    public override func set<Value>(_ value: Value, for path: KeyPath) where Value : Decodable, Value : Encodable {
         let setter: () -> Void = { [weak self] in
-            self?.database.set(value, model: model, instance: instance, property: property)
+            self?.database.set(value, for: path)
         }
-        let path = Path(model: model, instance: instance, property: property)
         // Note: Previous edits are overwritten
         modifiedValues[path] = (value, setter)
     }
@@ -38,7 +37,8 @@ public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<Mo
         var handledIds: Set<InstanceKey> = []
         let existing: [T] = database.all(model: model) { instance, status in
             handledIds.insert(instance)
-            if let edited: InstanceStatus = getFromCache(model: model, instance: instance, property: PropertyKey.instanceId) {
+            let path = KeyPath(model: model, instance: instance, property: PropertyKey.instanceId)
+            if let edited: InstanceStatus = getFromCache(path) {
                 return predicate(instance, edited)
             }
             return predicate(instance, status)
@@ -57,8 +57,8 @@ public final class EditingContext<ModelKey,InstanceKey,PropertyKey>: Database<Mo
         return existing + additions
     }
 
-    private func getFromCache<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value : Decodable, Value : Encodable {
-        guard let changed = modifiedValues[Path(model: model, instance: instance, property: property)] else {
+    private func getFromCache<Value>(_ path: KeyPath) -> Value? where Value : Decodable, Value : Encodable {
+        guard let changed = modifiedValues[path] else {
             return nil
         }
         return changed.value as? Value

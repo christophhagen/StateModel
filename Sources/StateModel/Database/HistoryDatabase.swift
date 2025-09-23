@@ -1,5 +1,9 @@
 import Foundation
 
+/**
+ An abstract class to subclass when implementing a state database that can store a history of each property.
+ - Warning: All required functions of the `HistoryDatabaseProtocol` must be overwritten in subclasses.
+ */
 open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey>, HistoryDatabaseProtocol where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
     /**
@@ -9,25 +13,21 @@ open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    open func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
+    open func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
         fatalError()
     }
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
+     - Parameter path: The path of the property
      - Parameter date: The date with which the value is associated, `nil` indicates the current time.
-     - Parameter property: The unique identifier of the property
      */
-    open func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) where Value: DatabaseValue {
+    open func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: DatabaseValue {
         fatalError()
     }
 
@@ -60,13 +60,11 @@ open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue {
-        guard let data: (value: Value, date: Date) = get(model: model, instance: instance, property: property, at: nil) else {
+    public override func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
+        guard let data: (value: Value, date: Date) = get(path, at: nil) else {
             return nil
         }
         return data.value
@@ -75,12 +73,10 @@ open class HistoryDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      */
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue {
-        set(value, model: model, instance: instance, property: property, at: nil)
+    public override func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
+        set(value, for: path, at: nil)
     }
 
     /**

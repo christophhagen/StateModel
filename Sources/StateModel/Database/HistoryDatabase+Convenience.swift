@@ -22,28 +22,24 @@ extension HistoryDatabase {
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Parameter type: The type of value to get
      - Returns: The value of the property, if one exists
      */
     @inline(__always)
-    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?, of type: Value.Type) -> (value: Value, date: Date)? where Value: DatabaseValue {
-        get(model: model, instance: instance, property: property, at: date)
+    public func get<Value>(_ path: KeyPath, at date: Date?, of type: Value.Type) -> (value: Value, date: Date)? where Value: DatabaseValue {
+        get(path, at: date)
     }
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Parameter type: The type of the value to set
      */
     @inline(__always)
-    func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?, of type: Value.Type) where Value: DatabaseValue {
-        set(value, model: model, instance: instance, property: property, at: date)
+    func set<Value>(_ value: Value, for path: KeyPath, at date: Date?, of type: Value.Type) where Value: DatabaseValue {
+        set(value, for: path, at: date)
     }
 
     // MARK: Instances
@@ -78,14 +74,16 @@ extension HistoryDatabase {
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
     public func get<Instance>(id: InstanceKey, at date: Date?, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, at: date, of: InstanceStatus.self) != nil else {
+        let path = Path(model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
+        guard get(path, at: date, of: InstanceStatus.self) != nil else {
             return nil
         }
         return .init(database: self, id: id)
     }
 
     public func active<Instance>(id: InstanceKey, at date: Date?, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, at: date)?.value, status == .created else {
+        let path = Path(model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
+        guard let status: InstanceStatus = get(path, at: date)?.value, status == .created else {
             return nil
         }
         return .init(database: self, id: id)
@@ -104,6 +102,7 @@ extension HistoryDatabase {
      - Parameter instance: The instance to delete
      */
     public func delete<Instance>(_ instance: Instance, at date: Date?) where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId, at: date)
+        let path = Path(model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
+        set(InstanceStatus.deleted, for: path, at: date)
     }
 }

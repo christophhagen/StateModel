@@ -21,9 +21,9 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
         self.contextStartDate = date
     }
 
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
-        let previous: (value: Value, date: Date)? = database.get(model: model, instance: instance, property: property, at: contextStartDate)
-        guard let edited: (value: Value, date: Date) = getFromCache(model: model, instance: instance, property: property) else {
+    public override func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
+        let previous: (value: Value, date: Date)? = database.get(path, at: contextStartDate)
+        guard let edited: (value: Value, date: Date) = getFromCache(path) else {
             return previous
 
         }
@@ -36,12 +36,11 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
         return edited // Edited value is closer to requested date
     }
     
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) where Value : Decodable, Value : Encodable {
+    public override func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value : Decodable, Value : Encodable {
         let timeOfChange = Date()
         let setter: () -> Void = { [weak self] in
-            self?.database.set(value, model: model, instance: instance, property: property, at: timeOfChange)
+            self?.database.set(value, for: path, at: timeOfChange)
         }
-        let path = Path(model: model, instance: instance, property: property)
         // Note: Previous edits are overwritten
         // TODO: Store all edits
         modifiedValues[path] = (value, timeOfChange, setter)
@@ -51,7 +50,8 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
         var handledIds: Set<InstanceKey> = []
         let existing: [T] = database.all(model: model, at: nil) { instance, status, timestamp in
             handledIds.insert(instance)
-            guard let edited: (value: InstanceStatus, date: Date) = getFromCache(model: model, instance: instance, property: PropertyKey.instanceId),
+            let path = KeyPath(model: model, instance: instance, property: PropertyKey.instanceId)
+            guard let edited: (value: InstanceStatus, date: Date) = getFromCache(path),
                   edited.date >= timestamp else {
                 return predicate(instance, status)
             }
@@ -71,8 +71,8 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
         return existing + additions
     }
 
-    private func getFromCache<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
-        guard let changed = modifiedValues[Path(model: model, instance: instance, property: property)] else {
+    private func getFromCache<Value>(_ path: KeyPath) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
+        guard let changed = modifiedValues[path] else {
             return nil
         }
         guard let value = changed.value as? Value else {

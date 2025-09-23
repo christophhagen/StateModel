@@ -38,8 +38,7 @@ public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: 
 
     // MARK: Properties
 
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? where Value: Codable {
-        let path = Path(model: model, instance: instance, property: property)
+    public override func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: Codable {
         guard let raw = cache[path]?.at(date) else {
             return nil
         }
@@ -49,10 +48,9 @@ public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: 
         return (value, raw.timestamp)
     }
 
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) where Value: Codable {
+    public override func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: Codable {
         let sample = EncodedSample(data: encode(value), timestamp: date)
         // TODO: Prevent duplicates?
-        let path = Path(model: model, instance: instance, property: property)
         cache[path, default: []].insert(sample)
         history.append(Record(path: path, sample: sample))
     }

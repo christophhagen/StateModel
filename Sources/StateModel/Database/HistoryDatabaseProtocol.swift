@@ -15,23 +15,19 @@ public protocol HistoryDatabaseProtocol: DatabaseProtocol {
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue
+     func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Parameter date: The date with which the value is associated, `nil` indicates the current time.
      */
-    func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) where Value: DatabaseValue
+     func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: DatabaseValue
 
     /**
      Provide specific properties in the database to a conversion function.
@@ -61,21 +57,25 @@ extension HistoryDatabaseProtocol {
 
     /**
      Get the value for a specific property.
-     - Parameter path: The path of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    public func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
-        get(model: path.model, instance: path.instance, property: path.property, at: date)
+    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue {
+        get(.init(model: model, instance: instance, property: property), at: date)
     }
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter path: The path of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      - Parameter date: The date with which the value is associated, `nil` indicates the current time.
      */
-    public func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: DatabaseValue {
-        set(value, model: path.model, instance: path.instance, property: path.property, at: date)
+    public func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) where Value: DatabaseValue {
+        set(value, for: .init(model: model, instance: instance, property: property), at: date)
     }
 }

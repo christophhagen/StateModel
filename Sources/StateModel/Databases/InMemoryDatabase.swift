@@ -36,18 +36,16 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Properties
 
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: Codable {
-        let path = Path(model: model, instance: instance, property: property)
+    public override func get<Value>(_ path: KeyPath) -> Value? where Value: Codable {
         guard let raw = cache[path] else {
             return nil
         }
         return decode(raw.data)
     }
 
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: Codable {
+    public override func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
         let sample = EncodedSample(data: encode(value))
         // TODO: Prevent duplicates?
-        let path = Path(model: model, instance: instance, property: property)
         cache[path] = sample
         history.append(Record(path: path, sample: sample))
     }

@@ -19,11 +19,11 @@ public final class HistoryView<ModelKey,InstanceKey,PropertyKey>: Database<Model
         self.date = date
     }
 
-    public override func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value : Decodable, Value : Encodable {
-        wrapped.get(model: model, instance: instance, property: property, at: date)?.value
+    public override func get<Value>(_ path: KeyPath) -> Value? where Value : Decodable, Value : Encodable {
+        wrapped.get(path, at: date)?.value
     }
 
-    public override func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value : Decodable, Value : Encodable {
+    public override func set<Value>(_ value: Value, for path: KeyPath) where Value : Decodable, Value : Encodable {
         // Note: In a history view, we don't allow writing to the database, and just ignore all updates
         // wrapped.set(value, model: model, instance: instance, property: property, at: date)
     }

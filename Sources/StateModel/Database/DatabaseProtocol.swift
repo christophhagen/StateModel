@@ -25,21 +25,17 @@ public protocol DatabaseProtocol: AnyObject {
 
     /**
      Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue
+    func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
+     - Parameter path: The path of the property
      */
-    func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue
+    func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue
 
     /**
      Provide specific properties in the database to a conversion function.
@@ -63,19 +59,23 @@ extension DatabaseProtocol {
 
     /**
      Get the value for a specific property.
-     - Parameter path: The path of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      - Returns: The value of the property, if one exists
      */
-    public func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
-        get(model: path.model, instance: path.instance, property: path.property)
+    public func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey) -> Value? where Value: DatabaseValue {
+        get(.init(model: model, instance: instance, property: property))
     }
 
     /**
      Set the value for a specific property.
      - Parameter value: The new value to set for the property
-     - Parameter path: The path of the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
      */
-    public func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
-        set(value, model: path.model, instance: path.instance, property: path.property)
+    public func set<Value>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) where Value: DatabaseValue {
+        set(value, for: .init(model: model, instance: instance, property: property))
     }
 }
