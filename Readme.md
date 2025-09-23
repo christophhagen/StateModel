@@ -131,11 +131,12 @@ Before writing the
 There is currently only one example implementation provided with `StateModel`, which keeps all data in memory.
 You can directly use this database for initial testing, but production use will likely require persistence.
 
-#### SQLite Datase
+#### SQLite Database
 
 An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
 It stores SQLite supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
-The current implementation restricts the [key paths](#paths) to integers.
+The current implementation restricts the [key paths](#paths) to types that can be represented in SQLite (including `Int` and `String`).
+It also provides caching of last used properties in memory.
 
 #### Custom implementation
 
