@@ -6,9 +6,11 @@ In those cases `StateModel` may be for you.
 The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without modifications.
 Just define your models in code, and don't worry about tables, schemas, or any of the low-level details.
 Then use your models like any other classes, while the model logic fetches all values directly from the database.
-In addition to the simple usage, `StateModel` even provides a simple mechanism to synchronize/merge databases.
+In addition to the simple usage, `StateModel` even works with SwiftUI, provides transactions, historic data, and a simple mechanism to synchronize/merge databases.
 
-Here's how it works: A data model usually consists of different model classes, which are identified somehow (think PRIMARY KEY), and which have some properties assigned (which can point to other models).
+## Core idea
+
+Here's how it works: A data model usually consists of different model classes, which are identified somehow (think SQLite PRIMARY KEY), and which have some properties assigned (which can point to other models).
 The idea is to identify each property by a unique "path", which consists of:
 - The id of the model class
 - The id of the instance
@@ -388,6 +390,27 @@ let context = database.createEditingContextWithCurrentState()
 
 Changes made to the database will then not appear in the context.
 
+### SwiftUI observations
+
+The SwiftUI ecosystem makes heavy use of observations, which are also supported with `StateModel`.
+To use models with SwiftUI, simply conform your models to `ObservableModel` instead of `Model`:
+
+```swift
+final class MyModel: ObservableModel<Int, Int, Int> {
+    static let modelId = 1
+}
+```
+
+Now the only additional thing needed is to wrap your database to track objects and notify them of changes:
+
+```swift
+let database = MyDatabase()
+let observedDatabase = ObservableDatabase(wrapping: database)
+```
+
+You now use the wrapper in all places where you would normally use the underlying database, e.g. for fetching models.
+It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
+
 ### Synchronization
 
 It's possible to synchronize databases with each other quite easily when you supply your own database solution:
@@ -457,5 +480,5 @@ The following things are currently planned:
 - [x] Editing contexts with undo and save
 - [x] Viewing objects at a point in time
 - [x] Explore macros to automatically generate property ids (didn't work) 
-- [ ] Update notifications similar to `ObservableObject` for use with SwiftUI
+- [x] Update notifications similar to `ObservableObject` for use with SwiftUI
 - [ ] Non-optional references with a default value
