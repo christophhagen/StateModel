@@ -59,7 +59,7 @@ public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProt
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
             let references: [S.Element.InstanceKey] = instance.get(wrapper.id) ?? []
-            return S.init(references.map { .init(database: instance.database, id: $0) })
+            return S.init(references.map { instance.database.getOrCreate(id: $0) })
         }
         set {
             let wrapper = instance[keyPath: storageKeyPath]

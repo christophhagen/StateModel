@@ -11,6 +11,20 @@ private final class ObservableTestModel: ObservableModel<Int, Int, Int> {
 
     @Property(id: 1)
     var a: Int
+
+    @Reference(id: 2)
+    var item: ObservableNestedModel?
+
+    @ReferenceList(id: 3)
+    var items: [ObservableNestedModel]
+}
+
+private final class ObservableNestedModel: ObservableModel<Int, Int, Int> {
+
+    static let modelId = 2
+
+    @Property(id: 1)
+    var value: Int
 }
 
 @Suite("Observable")
@@ -23,16 +37,9 @@ struct ObservableTests {
 
         let object: ObservableTestModel = database.create(id: 123)
 
-        var cancellables: Set<AnyCancellable> = []
-        let notified = AsyncStream<Void> { continuation in
-            object.objectWillChange
-                .sink { _ in continuation.yield(()) }
-                .store(in: &cancellables)
+        await observeChange(to: object) {
+            object.a = 123
         }
-
-        object.a = 123
-
-        _ = try await #require(notified.first { _ in true })
     }
 
     @Test("Trigger update on existing instance")
@@ -43,22 +50,72 @@ struct ObservableTests {
         let object: ObservableTestModel = database.create(id: 123)
         object.a = 123
 
-        var cancellables: Set<AnyCancellable> = []
-        let notified = AsyncStream<Void> { continuation in
-            object.objectWillChange
-                .sink { _ in continuation.yield(()) }
-                .store(in: &cancellables)
-        }
-
         let all: [ObservableTestModel] = database.all()
         #expect(all.count == 1)
         let otherReference = all.first!
 
 
-        otherReference.a = 124
-        #expect(object.a == 124)
-        #expect(otherReference.a == 124)
+        await observeChange(to: object) {
+            otherReference.a = 124
+            #expect(object.a == 124)
+            #expect(otherReference.a == 124)
+        }
+    }
 
-        _ = try await #require(notified.first { _ in true })
+    @Test("Observe reference element")
+    func observeReferenceElement() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let object: ObservableTestModel = database.create(id: 123)
+
+        let nested: ObservableNestedModel = database.create(id: 234)
+        nested.value = 42
+        object.item = nested
+
+        let referenced: ObservableNestedModel! = object.item
+        #expect(referenced != nil)
+        #expect(referenced.value == 42)
+
+        await observeChange(to: referenced, "No update triggered for nested object") {
+            nested.value = 43
+        }
+    }
+
+    @Test("Observe reference list elements")
+    func observeReferenceListElements() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let object: ObservableTestModel = database.create(id: 123)
+
+        let nested: ObservableNestedModel = database.create(id: 234)
+        nested.value = 42
+        object.items.append(nested)
+
+        #expect(object.items.count == 1)
+        let referenced = object.items[0]
+        #expect(referenced.value == 42)
+
+        await observeChange(to: referenced, "No update triggered for nested object") {
+            nested.value = 43
+        }
+    }
+}
+
+public func observeChange<O: ObservableObject>(
+    to object: O,
+    _ message: String? = nil,
+    trigger: () throws -> Void
+) async rethrows {
+    var cancellables: Set<AnyCancellable> = []
+    let comment = message.map { Comment.init(stringLiteral: $0) }
+    try await confirmation(comment) { confirm in
+        // Subscribe before triggering
+        object.objectWillChange
+            .sink { _ in confirm() }
+            .store(in: &cancellables)
+
+        try trigger()
     }
 }
