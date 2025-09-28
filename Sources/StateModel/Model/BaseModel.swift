@@ -21,6 +21,10 @@ open class BaseModel<ModelKey, InstanceKey, PropertyKey> where ModelKey: ModelKe
     }
 }
 
+extension BaseModel: Identifiable {
+
+}
+
 extension BaseModel: Equatable {
 
     public static func == (lhs: BaseModel, rhs: BaseModel) -> Bool {

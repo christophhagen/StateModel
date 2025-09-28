@@ -1,3 +1,4 @@
+import Foundation
 
 /**
  The generic base class from which all databases inherit from.
@@ -161,4 +162,8 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
     public func all<Instance: ModelProtocol>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         all(where: predicate)
     }
+}
+
+extension Database: ObservableObject {
+
 }
