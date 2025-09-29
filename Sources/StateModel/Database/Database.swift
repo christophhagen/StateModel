@@ -20,7 +20,7 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
      - Returns: The value of the property, if one exists
      */
     open func get<Value>(_ path: KeyPath) -> Value? where Value: DatabaseValue {
-        fatalError()
+        preconditionFailure("Subclasses must override `get(_)`")
     }
 
     /**
@@ -29,7 +29,7 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
      - Parameter property: The unique identifier of the property
      */
     open func set<Value>(_ value: Value, for path: KeyPath) where Value: DatabaseValue {
-        fatalError()
+        preconditionFailure("Subclasses must override `set(_)`")
     }
 
     /**
@@ -47,8 +47,8 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
      - Parameter status: The instance status of the path.
      - Returns: The list of all search results that were returned by the `predicate`
      */
-    open func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
-        fatalError()
+    open dynamic func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
+        preconditionFailure("Subclasses must override `all(_)`")
     }
 
     // MARK: Instances
