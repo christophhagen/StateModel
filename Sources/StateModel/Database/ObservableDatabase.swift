@@ -1,3 +1,4 @@
+import Foundation
 
 /**
  A database wrapper to enable the use of observable models.
@@ -23,7 +24,7 @@
  Whenever a property is changed in the database, the existing object is notified about the change, redrawing SwiftUI views.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey> where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
+public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey>, ObservableObject where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
 
     // MARK: Internal types
 
@@ -131,7 +132,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
     public func queryAll<Instance: ModelProtocol>(observer: QueryObserver<InstanceKey>, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         // Register query to notify on future changes
         cachedQueries[Instance.modelId, default: []].append(.init(observer))
-        return all(model: Instance.modelId) { instanceId, status in
+        return wrapped.all(model: Instance.modelId) { instanceId, status in
             guard status == .created else {
                 return nil
             }
