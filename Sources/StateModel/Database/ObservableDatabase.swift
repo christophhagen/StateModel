@@ -40,9 +40,9 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
     private typealias ObservedModel = ObservableBaseModel<ModelKey, InstanceKey, PropertyKey>
 
     /// A weak box for caching
-    private class WeakBox {
-        weak var value: ObservedModel?
-        init(_ value: ObservedModel) { self.value = value }
+    private class WeakBox<T: AnyObject> {
+        weak var value: T?
+        init(_ value: T) { self.value = value }
     }
 
     // MARK: Life cycle
@@ -59,7 +59,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
 
     // MARK: Instance caching and notification
 
-    private var storage: [ObjectKey : WeakBox] = [:]
+    private var storage: [ObjectKey : WeakBox<ObservedModel>] = [:]
 
     private var numberOfObjectsInsertedAfterLastCleanup = 0
 
@@ -102,7 +102,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         return object
     }
 
-    private func notifyChange(model: ModelKey, instance: InstanceKey) {
+    private func notifyChangedObjects(model: ModelKey, instance: InstanceKey) {
         let id = ObjectKey(model: model, instance: instance)
         guard let obj = storage[id]?.value else {
             return
@@ -117,6 +117,45 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         }
     }
 
+    // MARK: Query caching and notification
+
+    private struct Observer {
+
+        weak var observer: QueryObserver<InstanceKey>?
+
+        let predicate: (InstanceKey, InstanceStatus) -> Bool
+    }
+
+    private var cachedQueries: [ModelKey : [WeakBox<QueryObserver<InstanceKey>>]] = [:]
+
+    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver<InstanceKey>, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+        // Register query to notify on future changes
+        cachedQueries[Instance.modelId, default: []].append(.init(observer))
+        return wrapped.all(where: predicate)
+    }
+
+    private func notifyChangedQueries(model: ModelKey, instance: InstanceKey) {
+        guard let queries = cachedQueries[model] else {
+            print("Database: No queries for model \(model) (Update to instance \(instance))")
+            return
+        }
+        var needsCleaning = false
+        for box in queries {
+            guard let observer = box.value else {
+                print("Database: Found a deallocated observer for queries for model \(model) (Update to instance \(instance))")
+                needsCleaning = true
+                continue
+            }
+            print("Database: Notifying observer about update to instance \(instance) for model \(model)")
+            observer.didUpdate(instance: instance)
+        }
+        guard needsCleaning else {
+            return
+        }
+        cachedQueries[model] = queries.filter { $0.value != nil }
+    }
+
+
     // MARK: Database
 
     public override func get<Value: DatabaseValue>(_ path: KeyPath) -> Value? {
@@ -125,7 +164,8 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
 
     public override func set<Value: DatabaseValue>(_ value: Value, for path: KeyPath) {
         wrapped.set(value, for: path)
-        notifyChange(model: path.model, instance: path.instance)
+        notifyChangedObjects(model: path.model, instance: path.instance)
+        notifyChangedQueries(model: path.model, instance: path.instance)
     }
 
     public override func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
