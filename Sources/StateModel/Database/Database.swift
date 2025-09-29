@@ -47,7 +47,7 @@ open class Database<ModelKey, InstanceKey, PropertyKey>: DatabaseProtocol where 
      - Parameter status: The instance status of the path.
      - Returns: The list of all search results that were returned by the `predicate`
      */
-    open dynamic func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
+    open func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
         preconditionFailure("Subclasses must override `all(_)`")
     }
 

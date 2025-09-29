@@ -131,7 +131,16 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
     public func queryAll<Instance: ModelProtocol>(observer: QueryObserver<InstanceKey>, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
         // Register query to notify on future changes
         cachedQueries[Instance.modelId, default: []].append(.init(observer))
-        return wrapped.all(where: predicate)
+        return all(model: Instance.modelId) { instanceId, status in
+            guard status == .created else {
+                return nil
+            }
+            let instance = Instance(database: self, id: instanceId)
+            guard predicate(instance) else {
+                return nil
+            }
+            return instance
+        }
     }
 
     private func notifyChangedQueries(model: ModelKey, instance: InstanceKey) {
@@ -245,5 +254,42 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         if let observed = instance as? ObservedModel {
             observed.objectWillChange.send()
         }
+    }
+
+    /**
+     Get all instances of a given model type that fullfil the predicate.
+     - Parameter predicate: The filter function to apply.
+     - Returns: The instances in the database that match the predicate
+     */
+    open override func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+        return all(model: Instance.modelId) { instanceId, status in
+            guard status == .created else {
+                return nil
+            }
+            let instance = Instance(database: self, id: instanceId)
+            guard predicate(instance) else {
+                return nil
+            }
+            return instance
+        }
+    }
+
+    /**
+     Get all instances of a given model type.
+     - Returns: The instances in the database that are not deleted
+     */
+    @inline(__always)
+    public override func all<Instance>(of type: Instance.Type = Instance.self) -> [Instance] where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+        all { _ in true }
+    }
+
+    /**
+     Get all instances of a given model type that fullfil the predicate.
+     - Parameter model: The model type to select.
+     - Parameter predicate: The filter function to apply.
+     - Returns: The instances in the database that match the predicate
+     */
+    public override func all<Instance: ModelProtocol>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+        all(where: predicate)
     }
 }
