@@ -1,4 +1,4 @@
-import Foundation
+import Combine
 
 /**
  A state model base type for models that conform to ``ObservableObject``.
