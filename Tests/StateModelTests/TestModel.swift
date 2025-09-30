@@ -14,12 +14,12 @@ enum ModelId: Int, Comparable, Codable {
 
 
 
-typealias TestDatabase = InMemoryDatabase<ModelId, Int, Int>
-typealias TestBaseModel = Model<ModelId, Int, Int>
+typealias TestDatabase = InMemoryDatabase
+typealias TestBaseModel = Model
 
 final class TestModel: TestBaseModel {
 
-    static let modelId = ModelId.testModel
+    static let modelId = ModelId.testModel.rawValue
 
     @Property(id: PropertyId.a)
     var a: Int
@@ -43,7 +43,7 @@ final class TestModel: TestBaseModel {
 
 final class NestedModel: TestBaseModel {
 
-    static let modelId = ModelId.otherModel
+    static let modelId = ModelId.otherModel.rawValue
 
     @Property(id: 1)
     var some: Int
@@ -51,7 +51,7 @@ final class NestedModel: TestBaseModel {
 
 final class RepeatedModel: TestBaseModel {
 
-    static let modelId = ModelId.repeatedModel
+    static let modelId = ModelId.repeatedModel.rawValue
 
     @Property(id: 1)
     var some: Int

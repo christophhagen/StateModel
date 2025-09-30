@@ -15,7 +15,7 @@
 public struct Reference<Value> where Value: ModelProtocol {
 
     /// The unique id of the property for the model
-    let id: Value.PropertyKey
+    let id: PropertyKey
 
     /**
      The wrapped value will be queried from the database using the subscript.
@@ -31,14 +31,14 @@ public struct Reference<Value> where Value: ModelProtocol {
      Create a new property with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init(id: Value.PropertyKey) {
+    public init(id: PropertyKey) {
         self.id = id
     }
     /**
      Create a new property with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init<T: RawRepresentable>(id: T) where T.RawValue == Value.PropertyKey {
+    public init<T: RawRepresentable>(id: T) where T.RawValue == PropertyKey {
         self.id = id.rawValue
     }
 
@@ -52,11 +52,11 @@ public struct Reference<Value> where Value: ModelProtocol {
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value?>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Reference<Value>>
-    ) -> Value? where EnclosingSelf.ModelKey == Value.ModelKey, EnclosingSelf.InstanceKey == Value.InstanceKey, EnclosingSelf.PropertyKey == Value.PropertyKey {
+    ) -> Value? {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
-            guard let referenceId = instance.get(wrapper.id, of: Value.InstanceKey?.self),
+            guard let referenceId = instance.get(wrapper.id, of: InstanceKey?.self),
                   let referenceId else {
                 return nil
             }

@@ -2,10 +2,12 @@
 /**
  A basic model to subclass which contains a database reference and an instance id.
  */
-open class BaseModel<ModelKey, InstanceKey, PropertyKey> where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
+open class BaseModel {
+
+    public typealias InstanceKey = Int
 
     /// The reference to the model database to read and write property values
-    public unowned let database: Database<ModelKey, InstanceKey, PropertyKey>
+    public unowned let database: Database
 
     /// The unique id of the instance
     public let id: InstanceKey
@@ -15,7 +17,7 @@ open class BaseModel<ModelKey, InstanceKey, PropertyKey> where ModelKey: ModelKe
      - Parameter database: The reference to the model database to read and write property values
      - Parameter id: The unique id of the instance
      */
-    public init(database: Database<ModelKey, InstanceKey, PropertyKey>, id: InstanceKey) {
+    public init(database: Database, id: InstanceKey) {
         self.database = database
         self.id = id
     }

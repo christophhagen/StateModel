@@ -1,11 +1,11 @@
 import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-final class QueryManager<Result: ModelProtocol>: QueryObserver<Result.InstanceKey> {
+final class QueryManager<Result: ModelProtocol>: QueryObserver {
 
     var results: [Result] = []
 
-    typealias Storage = ObservableDatabase<Result.ModelKey, Result.InstanceKey, Result.PropertyKey>
+    typealias Storage = ObservableDatabase
 
     weak var database: Storage?
 
@@ -23,7 +23,7 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver<Result.InstanceKe
         results = database.queryAll(observer: self, where: { _ in true })
     }
 
-    override func didUpdate(instance: Result.InstanceKey) {
+    override func didUpdate(instance: InstanceKey) {
         guard results.contains(where: { $0.id == instance }) else {
             handleNewInstance(id: instance)
             return
@@ -32,7 +32,7 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver<Result.InstanceKe
         self.objectWillChange.send()
     }
 
-    private func handleNewInstance(id: Result.InstanceKey) {
+    private func handleNewInstance(id: InstanceKey) {
         guard let database else {
             print("QueryManager: No database to handle new instance \(id)")
             return

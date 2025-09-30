@@ -8,13 +8,10 @@ import Foundation
 
  Records are generic over the components of the path.
  */
-public struct Record<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType> {
-
-    /// The type of the key path using within the record.
-    public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
+public struct Record {
 
     /// The path to the property that was modified
-    public let path: KeyPath
+    public let path: Path
 
     /// The sample containing the information about the modified property
     public let sample: EncodedSample
@@ -24,7 +21,7 @@ public struct Record<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, Prope
      - Parameter path: The path to the property that was modified
      - Parameter sample: The sample containing the information about the modified property
      */
-    public init(path: KeyPath, sample: EncodedSample) {
+    public init(path: Path, sample: EncodedSample) {
         self.path = path
         self.sample = sample
     }
@@ -35,7 +32,7 @@ public struct Record<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, Prope
      - Parameter data: The encoded data of the modified property.
      - Parameter timestamp: The time when the property was modified.
      */
-    public init(path: KeyPath, data: Data, timestamp: Date = Date()) {
+    public init(path: Path, data: Data, timestamp: Date = Date()) {
         self.path = path
         self.sample = .init(data: data, timestamp: timestamp)
     }

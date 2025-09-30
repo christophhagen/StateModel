@@ -24,13 +24,13 @@ import Foundation
  Whenever a property is changed in the database, the existing object is notified about the change, redrawing SwiftUI views.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey>, ObservableObject where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
+public class ObservableDatabase: Database, ObservableObject {
 
     // MARK: Internal types
 
-    public typealias Wrapped = Database<ModelKey, InstanceKey, PropertyKey>
+    public typealias Wrapped = Database
 
-    public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
+    public typealias KeyPath = Path
 
     /// A key for the observed object cache
     private struct ObjectKey: Hashable {
@@ -38,7 +38,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         let instance: InstanceKey
     }
 
-    private typealias ObservedModel = ObservableBaseModel<ModelKey, InstanceKey, PropertyKey>
+    private typealias ObservedModel = ObservableBaseModel
 
     /// A weak box for caching
     private class WeakBox<T: AnyObject> {
@@ -54,7 +54,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
      Create an observing database by wrapping another database.
      - Parameter wrapped: The database to observe.
      */
-    public init(wrapping wrapped: Database<ModelKey, InstanceKey, PropertyKey>) {
+    public init(wrapping wrapped: Database) {
         self.wrapped = wrapped
     }
 
@@ -88,7 +88,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         }
     }
 
-    private func getCachedOrCreate<T: ModelProtocol>(instance: InstanceKey, notifyExisting: Bool = false) -> T where T.ModelKey == ModelKey, T.InstanceKey == InstanceKey, T.PropertyKey == PropertyKey {
+    private func getCachedOrCreate<T: ModelProtocol>(instance: InstanceKey, notifyExisting: Bool = false) -> T {
         let model = T.modelId
         if let existing = getCached(model: model, instance: instance) as? T {
             if notifyExisting, let observed = existing as? ObservedModel {
@@ -122,14 +122,14 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
 
     private struct Observer {
 
-        weak var observer: QueryObserver<InstanceKey>?
+        weak var observer: QueryObserver?
 
         let predicate: (InstanceKey, InstanceStatus) -> Bool
     }
 
-    private var cachedQueries: [ModelKey : [WeakBox<QueryObserver<InstanceKey>>]] = [:]
+    private var cachedQueries: [ModelKey : [WeakBox<QueryObserver>]] = [:]
 
-    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver<InstanceKey>, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver, where predicate: (Instance) -> Bool) -> [Instance] {
         // Register query to notify on future changes
         cachedQueries[Instance.modelId, default: []].append(.init(observer))
         return wrapped.all(model: Instance.modelId) { instanceId, status in
@@ -165,20 +165,19 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         cachedQueries[model] = queries.filter { $0.value != nil }
     }
 
-
     // MARK: Database
 
-    public override func get<Value: DatabaseValue>(_ path: KeyPath) -> Value? {
+    public func get<Value: DatabaseValue>(_ path: KeyPath) -> Value? {
         wrapped.get(path)
     }
 
-    public override func set<Value: DatabaseValue>(_ value: Value, for path: KeyPath) {
+    public func set<Value: DatabaseValue>(_ value: Value, for path: KeyPath) {
         wrapped.set(value, for: path)
         notifyChangedObjects(model: path.model, instance: path.instance)
         notifyChangedQueries(model: path.model, instance: path.instance)
     }
 
-    public override func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
+    public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
         guard T.self is ObservedModel.Type else {
             return wrapped.all(model: model, where: predicate)
         }
@@ -196,6 +195,8 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
         }
     }
 
+    // MARK: Instances
+
     /**
      Create a new instance.
 
@@ -206,7 +207,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
      - Parameter type: The type of model to create.
      - Returns: A new model instance of the specified type with the given id.
      */
-    public override func create<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func create<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance {
         set(InstanceStatus.created, model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
         // If an existing object is passed to this function, notify it about the status change
         return getCachedOrCreate(instance: id, notifyExisting: true)
@@ -217,7 +218,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
      - Note: This function also returns instances that have previously been deleted.
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
-    public override func get<Instance>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func get<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
         guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, of: InstanceStatus.self) != nil else {
             return nil
         }
@@ -230,7 +231,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
      - Parameter type: The type of the model
      - Returns: The existing, non-deleted instance, or `nil`
      */
-    public override func active<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance? where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func active<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
         guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId), status == .created else {
             return nil
         }
@@ -238,18 +239,10 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
     }
 
     /**
-     Get an existing instance of a model or create it.
-     - Note: If an instance exists, but is deleted, it will still be returned.
-     */
-    public override func getOrCreate<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type = Instance.self) -> Instance where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        get(id: id) ?? create(id: id)
-    }
-
-    /**
      Delete a specific instance.
      - Parameter instance: The instance to delete
      */
-    public override func delete<Instance: ModelProtocol>(_ instance: Instance) where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func delete<Instance: ModelProtocol>(_ instance: Instance) {
         set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
         // Notify instance about deletion status
         if let observed = instance as? ObservedModel {
@@ -262,7 +255,7 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
-    open override func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
+    public func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] {
         return all(model: Instance.modelId) { instanceId, status in
             guard status == .created else {
                 return nil
@@ -273,24 +266,5 @@ public class ObservableDatabase<ModelKey,InstanceKey,PropertyKey>: Database<Mode
             }
             return instance
         }
-    }
-
-    /**
-     Get all instances of a given model type.
-     - Returns: The instances in the database that are not deleted
-     */
-    @inline(__always)
-    public override func all<Instance>(of type: Instance.Type = Instance.self) -> [Instance] where Instance: ModelProtocol, Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        all { _ in true }
-    }
-
-    /**
-     Get all instances of a given model type that fullfil the predicate.
-     - Parameter model: The model type to select.
-     - Parameter predicate: The filter function to apply.
-     - Returns: The instances in the database that match the predicate
-     */
-    public override func all<Instance: ModelProtocol>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] where Instance.ModelKey == ModelKey, Instance.InstanceKey == InstanceKey, Instance.PropertyKey == PropertyKey {
-        all(where: predicate)
     }
 }

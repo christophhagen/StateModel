@@ -5,17 +5,8 @@ import Foundation
  */
 public protocol ModelProtocol: AnyObject {
 
-    /// The type used to uniquely identify the model
-    associatedtype ModelKey: ModelKeyType
-
-    /// The type used to uniquely identify each instance of the model
-    associatedtype InstanceKey: InstanceKeyType
-
-    /// The type used to uniquely identify the properties of the model
-    associatedtype PropertyKey: PropertyKeyType
-
     /// The database suitable to store data of the model
-    typealias Storage = Database<ModelKey, InstanceKey, PropertyKey>
+    typealias Storage = Database
 
     /**
      The unique ID of this model class when used in a key path.
@@ -37,12 +28,12 @@ public protocol ModelProtocol: AnyObject {
 
      This reference should be `unowned` to not create retain cycles.
      */
-    var database: Database<ModelKey, InstanceKey, PropertyKey> { get }
+    var database: Database { get }
 
     /**
      Create a new instance.
      */
-    init(database: Database<ModelKey, InstanceKey, PropertyKey>, id: InstanceKey)
+    init(database: Database, id: InstanceKey)
 }
 
 extension ModelProtocol {
@@ -57,7 +48,7 @@ extension ModelProtocol {
         database.set(value, model: Self.modelId, instance: id, property: property)
     }
 
-    public func all(in database: Database<ModelKey, InstanceKey, PropertyKey>) -> [Self] {
+    public func all(in database: Database) -> [Self] {
         database.all(model: Self.modelId) { instanceId, status in
             guard status == .created else {
                 return nil

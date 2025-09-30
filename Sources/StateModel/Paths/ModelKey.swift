@@ -8,4 +8,4 @@
 
  The size of the model key is important because every value of a property stored in the database will contain a model key value alongside it.
  */
-public typealias ModelKeyType = Hashable & Codable & Comparable
+public typealias ModelKey = Int

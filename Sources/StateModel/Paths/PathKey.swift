@@ -13,4 +13,4 @@
 
  The size of the path key is important because every value of a property stored in the database will contain a path alongside it, which consists of three `PathKey` components.
  */
-public typealias PathKey = ModelKeyType & InstanceKeyType & PropertyKeyType
+public typealias PathKey = Int

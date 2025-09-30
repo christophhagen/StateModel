@@ -3,7 +3,7 @@ import StateModel
 
 private final class SetModel: TestBaseModel {
 
-    static let modelId = ModelId.testModel
+    static let modelId = ModelId.testModel.rawValue
 
     @ReferenceList(id: 1)
     var list: Set<NestedModel>

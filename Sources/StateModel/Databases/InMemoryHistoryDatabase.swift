@@ -3,24 +3,20 @@ import Foundation
 /**
  A simple database implementation that only caches the latest values in memory
  */
-public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: HistoryDatabase<ModelKey, InstanceKey, PropertyKey> {
-
-    public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
-
-    public typealias Record = StateModel.Record<ModelKey, InstanceKey, PropertyKey>
+public final class InMemoryHistoryDatabase: HistoryDatabase {
 
     /// A simple in-memory cache
     /// The values are sorted by their timestamps, the last value is the most recent
     /// The values are encoded, since otherwise it's not possible to insert values from other databases,
     /// because the type is only known when accessing the values
-    private var cache: [KeyPath: [EncodedSample]] = [:]
+    private var cache: [Path: [EncodedSample]] = [:]
 
     private var history: [Record] = []
 
     /**
      Create an empty database.
      */
-    public override init() { }
+    public init() { }
 
     // MARK: Encoding
 
@@ -38,7 +34,7 @@ public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: 
 
     // MARK: Properties
 
-    public override func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value: Codable {
+    public func get<Value: DatabaseValue>(_ path: Path, at date: Date?) -> (value: Value, date: Date)? {
         guard let raw = cache[path]?.at(date) else {
             return nil
         }
@@ -48,7 +44,7 @@ public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: 
         return (value, raw.timestamp)
     }
 
-    public override func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value: Codable {
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path, at date: Date?) {
         let sample = EncodedSample(data: encode(value), timestamp: date)
         // TODO: Prevent duplicates?
         cache[path, default: []].insert(sample)
@@ -57,7 +53,7 @@ public final class InMemoryHistoryDatabase<ModelKey: ModelKeyType, InstanceKey: 
 
     // MARK: Instances
 
-    override public func all<T>(model: ModelKey, at date: Date?, where predicate: (InstanceKey, InstanceStatus, Date) -> T?) -> [T] {
+    public func all<T>(model: ModelKey, at date: Date?, where predicate: (InstanceKey, InstanceStatus, Date) -> T?) -> [T] {
         cache.compactMap { (path, values) -> T? in
             guard path.model == model,
                   path.property == PropertyKey.instanceId,

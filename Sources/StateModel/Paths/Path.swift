@@ -8,24 +8,17 @@
  - The property id uniquely identifies each property of a type
 
  Together these three parts are used to address and store values in the database.
-
- The recommendation is:
- - `UInt8` for the `ModelKey`, allowing 256 different model types
- - `UInt32` for the `InstanceKey`, allowing the storage of 4,294,967,296 different instances
- - `UInt8` for the `PropertyKey`, allowing 255 different properties per model.
-
- It's also possible to use `String`, mostly for easier debugging.
  */
-public struct Path<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: Hashable {
+public struct Path: Hashable {
 
     /// The unique identifier of the model type
-    public let model: ModelKey
+    public let model: Int
 
     /// The unique identifier of the instance
-    public let instance: InstanceKey
+    public let instance: Int
 
     /// The unique identifier of the property
-    public let property: PropertyKey
+    public let property: Int
 
     /**
      Create a new path.
@@ -34,7 +27,7 @@ public struct Path<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, Propert
      - Parameter instance: The unique identifier of the instance
      - Parameter property: The unique identifier of the property
      */
-    public init(model: ModelKey, instance: InstanceKey, property: PropertyKey) {
+    public init(model: Int, instance: Int, property: Int) {
         self.model = model
         self.instance = instance
         self.property = property
@@ -48,10 +41,10 @@ public struct Path<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, Propert
      - Parameter model: The unique identifier of the model type
      - Parameter instance: The unique identifier of the instance
      */
-    init(model: ModelKey, instance: InstanceKey) {
+    init(model: Int, instance: Int) {
         self.model = model
         self.instance = instance
-        self.property = PropertyKey.instanceId
+        self.property = Int.instanceId
     }
 }
 

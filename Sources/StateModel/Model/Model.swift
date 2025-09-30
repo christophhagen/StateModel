@@ -47,4 +47,4 @@
  print(instance.some) // prints "abc"
  ```
  */
-public typealias Model<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType> = BaseModel<ModelKey, InstanceKey, PropertyKey> & ModelProtocol
+public typealias Model = BaseModel & ModelProtocol

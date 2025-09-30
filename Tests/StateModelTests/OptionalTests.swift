@@ -3,7 +3,7 @@ import StateModel
 
 private final class OptionalModel: TestBaseModel {
 
-    static let modelId = ModelId.testModel
+    static let modelId = ModelId.testModel.rawValue
 
     @Property(id: 1)
     var a: Int?

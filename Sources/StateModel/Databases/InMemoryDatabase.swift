@@ -5,20 +5,16 @@ import Foundation
 
  This implementation does not provide a history, see ``InMemoryHistoryDatabase`` for an alternative.
  */
-public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType>: Database<ModelKey, InstanceKey, PropertyKey> {
+public final class InMemoryDatabase: Database {
 
-    public typealias KeyPath = Path<ModelKey, InstanceKey, PropertyKey>
-
-    public typealias Record = StateModel.Record<ModelKey, InstanceKey, PropertyKey>
-
-    private var cache: [KeyPath: EncodedSample] = [:]
+    private var cache: [Path: EncodedSample] = [:]
 
     private var history: [Record] = []
 
     /**
      Create an empty database.
      */
-    public override init() { }
+    public init() { }
 
     // MARK: Encoding
 
@@ -36,14 +32,14 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Properties
 
-    public override func get<Value>(_ path: KeyPath) -> Value? where Value: Codable {
+    public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
         guard let raw = cache[path] else {
             return nil
         }
         return decode(raw.data)
     }
 
-    public override func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path) {
         let sample = EncodedSample(data: encode(value))
         // TODO: Prevent duplicates?
         cache[path] = sample
@@ -52,7 +48,7 @@ public final class InMemoryDatabase<ModelKey: ModelKeyType, InstanceKey: Instanc
 
     // MARK: Instances
 
-    public override func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
+    public func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
                   path.property == PropertyKey.instanceId,

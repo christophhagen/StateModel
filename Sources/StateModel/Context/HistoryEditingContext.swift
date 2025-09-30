@@ -3,10 +3,10 @@ import Foundation
 /**
  A temporary context to perform edits to a database, which can be commited all together.
  */
-public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: HistoryDatabase<ModelKey,InstanceKey,PropertyKey> where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
+public final class HistoryEditingContext: Database {
 
     /// The database which is being edited
-    private unowned let database: HistoryDatabase<ModelKey,InstanceKey,PropertyKey>
+    private unowned let database: HistoryDatabase
 
     /// The date at which the context was created
     private var contextStartDate: Date
@@ -14,43 +14,43 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
     /// The modified values
     ///
     /// - Note: Contains only the most recent values of the edits
-    private var modifiedValues: [Path<ModelKey, InstanceKey, PropertyKey>: (value: Any, date: Date, setter: () -> Void)] = [:]
+    private var modifiedValues: [Path: (value: Any, date: Date, setter: () -> Void)] = [:]
 
-    init(database: HistoryDatabase<ModelKey,InstanceKey,PropertyKey>, date: Date) {
+    init(database: HistoryDatabase, date: Date) {
         self.database = database
         self.contextStartDate = date
     }
 
-    public override func get<Value>(_ path: KeyPath, at date: Date?) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
+    public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
         let previous: (value: Value, date: Date)? = database.get(path, at: contextStartDate)
         guard let edited: (value: Value, date: Date) = getFromCache(path) else {
-            return previous
+            return previous?.value
 
         }
         guard let previous else {
-            return edited
+            return edited.value
         }
         guard edited.date >= previous.date else {
-            return previous // Previous value is closer to requested date
+            return previous.value // Previous value is closer to requested date
         }
-        return edited // Edited value is closer to requested date
+        return edited.value // Edited value is closer to requested date
     }
     
-    public override func set<Value>(_ value: Value, for path: KeyPath, at date: Date?) where Value : Decodable, Value : Encodable {
-        let timeOfChange = Date()
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path) {
         let setter: () -> Void = { [weak self] in
-            self?.database.set(value, for: path, at: timeOfChange)
+            guard let self else { return }
+            self.database.set(value, for: path, at: self.contextStartDate)
         }
         // Note: Previous edits are overwritten
         // TODO: Store all edits
-        modifiedValues[path] = (value, timeOfChange, setter)
+        modifiedValues[path] = (value, contextStartDate, setter)
     }
-    
-    public override func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
+
+    public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
         var handledIds: Set<InstanceKey> = []
-        let existing: [T] = database.all(model: model, at: nil) { instance, status, timestamp in
+        let existing: [T] = database.all(model: model, at: contextStartDate) { instance, status, timestamp in
             handledIds.insert(instance)
-            let path = KeyPath(model: model, instance: instance, property: PropertyKey.instanceId)
+            let path = Path(model: model, instance: instance, property: PropertyKey.instanceId)
             guard let edited: (value: InstanceStatus, date: Date) = getFromCache(path),
                   edited.date >= timestamp else {
                 return predicate(instance, status)
@@ -71,7 +71,7 @@ public final class HistoryEditingContext<ModelKey,InstanceKey,PropertyKey>: Hist
         return existing + additions
     }
 
-    private func getFromCache<Value>(_ path: KeyPath) -> (value: Value, date: Date)? where Value : Decodable, Value : Encodable {
+    private func getFromCache<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)? {
         guard let changed = modifiedValues[path] else {
             return nil
         }

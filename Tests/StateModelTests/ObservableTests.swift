@@ -3,9 +3,9 @@ import Testing
 import StateModel
 import Combine
 
-private typealias ObservableTestDatabase = InMemoryDatabase<Int, Int, Int>
+private typealias ObservableTestDatabase = InMemoryDatabase
 
-private final class ObservableTestModel: ObservableModel<Int, Int, Int> {
+private final class ObservableTestModel: ObservableModel {
 
     static let modelId = 1
 
@@ -19,7 +19,7 @@ private final class ObservableTestModel: ObservableModel<Int, Int, Int> {
     var items: [ObservableNestedModel]
 }
 
-private final class ObservableNestedModel: ObservableModel<Int, Int, Int> {
+private final class ObservableNestedModel: ObservableModel {
 
     static let modelId = 2
 

@@ -28,7 +28,7 @@
  To model relationships to other models, see ``Reference`` and ``ReferenceList``.
  */
 @propertyWrapper
-public struct Property<Value: DatabaseValue, PropertyKey: PropertyKeyType> {
+public struct Property<Value: DatabaseValue> {
 
     /// The unique id of the property for the model
     let id: PropertyKey
@@ -112,8 +112,8 @@ public struct Property<Value: DatabaseValue, PropertyKey: PropertyKeyType> {
     public static subscript<EnclosingSelf: ModelProtocol>(
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Value>,
-        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Property<Value, PropertyKey>>
-    ) -> Value where EnclosingSelf.PropertyKey == PropertyKey {
+        storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, Property<Value>>
+    ) -> Value {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             return instance.get(wrapper.id) ?? wrapper.defaultValue

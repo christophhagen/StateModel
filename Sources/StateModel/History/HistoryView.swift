@@ -3,10 +3,10 @@ import Foundation
 /**
  A view of a database at a specific instance in time.
  */
-public final class HistoryView<ModelKey,InstanceKey,PropertyKey>: Database<ModelKey,InstanceKey,PropertyKey> where ModelKey: ModelKeyType, InstanceKey: InstanceKeyType, PropertyKey: PropertyKeyType {
+public final class HistoryView: Database {
 
     /// The database that is accessed
-    private let wrapped: HistoryDatabase<ModelKey,InstanceKey,PropertyKey>
+    private let wrapped: HistoryDatabase
 
     /// The date at which the database is accessed
     private var date: Date
@@ -14,21 +14,21 @@ public final class HistoryView<ModelKey,InstanceKey,PropertyKey>: Database<Model
     /**
      Create a new history view
      */
-    init(wrapped: HistoryDatabase<ModelKey, InstanceKey, PropertyKey>, at date: Date) {
+    init(wrapped: HistoryDatabase, at date: Date) {
         self.wrapped = wrapped
         self.date = date
     }
 
-    public override func get<Value>(_ path: KeyPath) -> Value? where Value : Decodable, Value : Encodable {
+    public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
         wrapped.get(path, at: date)?.value
     }
 
-    public override func set<Value>(_ value: Value, for path: KeyPath) where Value : Decodable, Value : Encodable {
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path) {
         // Note: In a history view, we don't allow writing to the database, and just ignore all updates
         // wrapped.set(value, model: model, instance: instance, property: property, at: date)
     }
 
-    public override func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
+    public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
         wrapped.all(model: model, at: date) { instance, status, _ in
             predicate(instance, status)
         }

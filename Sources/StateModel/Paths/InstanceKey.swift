@@ -8,4 +8,4 @@
 
  The size of the instance key is important because every value of a property stored in the database will contain an instance key value alongside it.
  */
-public typealias InstanceKeyType = Hashable & Codable & Comparable
+public typealias InstanceKey = Int

@@ -6,7 +6,7 @@ import SwiftUI
 public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
 
     @EnvironmentObject
-    private var database: ObservableDatabase<Result.ModelKey, Result.InstanceKey, Result.PropertyKey>
+    private var database: ObservableDatabase
 
     @StateObject
     private var observer: QueryManager<Result> = .init(database: nil)

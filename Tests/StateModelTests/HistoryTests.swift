@@ -2,7 +2,7 @@ import Foundation
 import Testing
 import StateModel
 
-private typealias TestHistoryDatabase = InMemoryHistoryDatabase<ModelId, Int, Int>
+private typealias TestHistoryDatabase = InMemoryHistoryDatabase
 
 @Suite("History View")
 struct HistoryViewTests {

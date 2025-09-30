@@ -12,10 +12,10 @@
  ```
  */
 @propertyWrapper
-public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProtocol, S.Element.PropertyKey: DatabaseValue {
+public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProtocol {
 
     /// The unique id of the property for the model
-    let id: S.Element.PropertyKey
+    let id: PropertyKey
 
     /**
      The wrapped value will be queried from the database using the subscript.
@@ -31,7 +31,7 @@ public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProt
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init(id: S.Element.PropertyKey) {
+    public init(id: PropertyKey) {
         self.id = id
     }
 
@@ -39,7 +39,7 @@ public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProt
      Create a new reference list with a property id
      - Parameter id: The unique id of the property for the model
      */
-    public init<T: RawRepresentable>(id: T) where T.RawValue == S.Element.PropertyKey {
+    public init<T: RawRepresentable>(id: T) where T.RawValue == PropertyKey {
         self.id = id.rawValue
     }
 
@@ -54,11 +54,11 @@ public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProt
         _enclosingInstance instance: EnclosingSelf,
         wrapped wrappedKeyPath: ReferenceWritableKeyPath<EnclosingSelf, S>,
         storage storageKeyPath: ReferenceWritableKeyPath<EnclosingSelf, ReferenceList<S>>
-    ) -> S where EnclosingSelf.ModelKey == S.Element.ModelKey, EnclosingSelf.InstanceKey == S.Element.InstanceKey, EnclosingSelf.PropertyKey == S.Element.PropertyKey {
+    ) -> S {
         get {
             let wrapper = instance[keyPath: storageKeyPath]
             // First get the id of the referenced instance
-            let references: [S.Element.InstanceKey] = instance.get(wrapper.id) ?? []
+            let references: [InstanceKey] = instance.get(wrapper.id) ?? []
             return S.init(references.map { instance.database.getOrCreate(id: $0) })
         }
         set {

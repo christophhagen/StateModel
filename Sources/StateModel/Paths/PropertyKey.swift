@@ -22,3 +22,5 @@ public protocol PropertyKeyType: Hashable, Comparable, DatabaseValue {
      */
     static var instanceId: Self { get }
 }
+
+public typealias PropertyKey = Int

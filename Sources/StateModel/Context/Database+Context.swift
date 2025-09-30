@@ -8,7 +8,7 @@ extension Database {
 
      - Note: Updates to the database while editing will appear in the context.
      */
-    public func createEditingContext() -> EditingContext<ModelKey, InstanceKey, PropertyKey> {
+    public func createEditingContext() -> EditingContext {
         .init(database: self)
     }
 }
@@ -21,7 +21,7 @@ extension HistoryDatabase {
      Commiting changes to the database will save all values,
      but only the most recent values for each property will be shown.
      */
-    public func createEditingContextWithCurrentState() -> HistoryEditingContext<ModelKey, InstanceKey, PropertyKey> {
+    public func createEditingContextWithCurrentState() -> HistoryEditingContext {
         .init(database: self, date: Date())
     }
 }

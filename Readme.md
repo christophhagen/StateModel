@@ -467,7 +467,7 @@ Based on this template, you can easily implement caching, synchronization, persi
 
 If you want to track the history of each property, so that you can revert changes or benefit from additional features (like `HistoryView`), then implement a `HistoryDatabase` instead.
 
-> Tip: First conform to `DatabaseProtocol` or `HistoryDatabaseProtocol` to determine all the required functions to implement, then inherit from `Database` and `HistoryDatabase` to complete the implementation.
+> Tip: First conform to `Database` or `HistoryDatabase` to determine all the required functions to implement, then inherit from `Database` and `HistoryDatabase` to complete the implementation.
 > If you inherit from the base classes without overriding the required methods (`get()`, `set()` and `all()`) then a `fatalError` will be produced at runtime.
 
 ## Roadmap
