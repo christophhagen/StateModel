@@ -10,7 +10,6 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
     weak var database: Storage?
 
     init(database: Storage?) {
-        print("QueryManager.init")
         self.database = database
     }
 
@@ -18,7 +17,6 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
         guard self.database == nil else {
             return
         }
-        print("QueryManager: Initial fetch")
         self.database = database
         results = database.queryAll(observer: self, where: { _ in true })
     }
@@ -28,20 +26,16 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             handleNewInstance(id: instance)
             return
         }
-        print("QueryManager: Did change instance \(instance)")
         self.objectWillChange.send()
     }
 
     private func handleNewInstance(id: InstanceKey) {
         guard let database else {
-            print("QueryManager: No database to handle new instance \(id)")
             return
         }
         guard let instance: Result = database.get(id: id) else {
-            print("QueryManager: No new instance \(id)")
             return
         }
-        print("QueryManager: Added new instance \(id)")
         results.append(instance)
         self.objectWillChange.send()
     }
