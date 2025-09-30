@@ -26,6 +26,7 @@ public typealias ObservableModel = ObservableBaseModel & ModelProtocol
  The base class for model classes that are observable.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+@MainActor
 open class ObservableBaseModel: BaseModel, ObservableObject {
 
     public override init(database: any Database, id: BaseModel.InstanceKey) {
