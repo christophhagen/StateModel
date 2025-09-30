@@ -3,6 +3,30 @@ import Foundation
 extension HistoryDatabase {
 
     /**
+     Get the value for a specific property.
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
+     - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
+     - Returns: The value of the property, if one exists
+     */
+    public func get<Value: DatabaseValue>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? {
+        get(.init(model: model, instance: instance, property: property), at: date)
+    }
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
+     - Parameter date: The date with which the value is associated, `nil` indicates the current time.
+     */
+    public func set<Value: DatabaseValue>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) {
+        set(value, for: .init(model: model, instance: instance, property: property), at: date)
+    }
+
+    /**
      Get all instances of a given model type that fullfil the predicate.
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate

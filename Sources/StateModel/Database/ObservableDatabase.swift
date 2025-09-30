@@ -13,9 +13,8 @@ import Foundation
  Instead of adopting the ``Model`` typealias for model definitions, use ``ObservableModel``:
 
  ```swift
- typealias MyModelType = ObservableModel<Int, Int, Int>
 
- final class MyModel: MyModelType {
+ final class MyModel: ObservableModel {
 
  }
  ```

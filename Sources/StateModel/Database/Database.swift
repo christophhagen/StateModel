@@ -1,22 +1,48 @@
-import Foundation
 
+/**
+ A database represents the interface to store and retrieve information about models and their data.
 
-extension Database {
+ A database has three functions:
+ - Write a value for a property of a model instance
+ - Get a value for a property
+ - Select all instances of a model with a specific property key
+ */
+public protocol Database: AnyObject {
 
-    // MARK: Instances
+    // MARK: Properties
 
     /**
-     Create a new instance.
-
-     This function will set the instance status of the provided id to `created`,
-     and return the instance.
-
-     - Parameter id: The instance id
-     - Returns: A new model instance of the specified type with the given id.
+     Get the value for a specific property.
+     - Parameter path: The path of the property
+     - Returns: The value of the property, if one exists
      */
-    public func create<Instance: ModelProtocol>(id: InstanceKey) -> Instance {
-        create(id: id, of: Instance.self)
-    }
+    func get<Value>(_ path: Path) -> Value? where Value: DatabaseValue
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter path: The path of the property
+     */
+    func set<Value>(_ value: Value, for path: Path) where Value: DatabaseValue
+
+    /**
+     Provide specific properties in the database to a conversion function.
+
+     This function must provide all properties in the database that:
+     - match the given model id
+     - match the `PropertyKey.instanceId`
+     - are of type `InstanceStatus`
+
+     This function is used to select all instances of a model with specific properties.
+     - Parameter model: The model id to match
+     - Parameter predicate: The conversion function to call for each result of the search
+     - Parameter instance: The instance id of the path that contained the `status`
+     - Parameter status: The instance status of the path.
+     - Returns: The list of all search results that were returned by the `predicate`
+     */
+    func all<T>(model: ModelKey, where predicate: (_ instance: Int, _ status: InstanceStatus) -> T?) -> [T]
+
+    // MARK: Default implementations
 
     /**
      Create a new instance.
@@ -28,40 +54,14 @@ extension Database {
      - Parameter type: The type of model to create.
      - Returns: A new model instance of the specified type with the given id.
      */
-    public func create<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance {
-        set(InstanceStatus.created, model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
-        return .init(database: self, id: id)
-    }
+    func create<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance
 
     /**
      Get an instance of a model by its id.
      - Note: This function also returns instances that have previously been deleted.
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
-    public func get<Instance: ModelProtocol>(id: InstanceKey) -> Instance? {
-        get(id: id, of: Instance.self)
-    }
-
-    /**
-     Get an instance of a model by its id.
-     - Note: This function also returns instances that have previously been deleted.
-     Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
-     */
-    public func get<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
-        guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, of: InstanceStatus.self) != nil else {
-            return nil
-        }
-        return .init(database: self, id: id)
-    }
-
-    /**
-     Get an instance via its id, if it exists and is not deleted.
-     - Parameter id: The instance id
-     - Returns: The existing, non-deleted instance, or `nil`
-     */
-    public func active<Instance: ModelProtocol>(id: InstanceKey) -> Instance? {
-        active(id: id, of: Instance.self)
-    }
+    func get<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance?
 
     /**
      Get an instance via its id, if it exists and is not deleted.
@@ -69,86 +69,18 @@ extension Database {
      - Parameter type: The type of the model
      - Returns: The existing, non-deleted instance, or `nil`
      */
-    public func active<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
-        guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId), status == .created else {
-            return nil
-        }
-        return .init(database: self, id: id)
-    }
-
-    /**
-     Get an existing instance of a model or create it.
-     - Note: If an instance exists, but is deleted, it will still be returned.
-     */
-    public func getOrCreate<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance {
-        get(id: id) ?? create(id: id)
-    }
-
-    /**
-     Get an existing instance of a model or create it.
-     - Note: If an instance exists, but is deleted, it will still be returned.
-     */
-    public func getOrCreate<Instance: ModelProtocol>(id: InstanceKey) -> Instance {
-        getOrCreate(id: id, of: Instance.self)
-    }
+    func active<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance?
 
     /**
      Delete a specific instance.
      - Parameter instance: The instance to delete
      */
-    public func delete<Instance: ModelProtocol>(_ instance: Instance) {
-        set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
-    }
-
-    /**
-     Get the value for a specific property.
-     - Parameter model: The unique identifier of the model type
-     - Parameter instance: The unique identifier of the instance
-     - Parameter property: The unique identifier of the property
-     - Parameter type: The type of value to get
-     - Returns: The value of the property, if one exists
-     */
-    @inline(__always)
-    func get<Value>(model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type) -> Value? where Value: DatabaseValue {
-        get(model: model, instance: instance, property: property)
-    }
-    
-    // MARK: Queries
+    func delete<Instance: ModelProtocol>(_ instance: Instance)
 
     /**
      Get all instances of a given model type that fullfil the predicate.
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
-    public func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance] {
-        return all(model: Instance.modelId) { instanceId, status in
-            guard status == .created else {
-                return nil
-            }
-            let instance = Instance(database: self, id: instanceId)
-            guard predicate(instance) else {
-                return nil
-            }
-            return instance
-        }
-    }
-
-    /**
-     Get all instances of a given model type.
-     - Returns: The instances in the database that are not deleted
-     */
-    @inline(__always)
-    public func all<Instance: ModelProtocol>(of type: Instance.Type = Instance.self) -> [Instance] {
-        all { _ in true }
-    }
-
-    /**
-     Get all instances of a given model type that fullfil the predicate.
-     - Parameter model: The model type to select.
-     - Parameter predicate: The filter function to apply.
-     - Returns: The instances in the database that match the predicate
-     */
-    public func all<Instance: ModelProtocol>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] {
-        all(where: predicate)
-    }
+    func all<Instance: ModelProtocol>(where predicate: (Instance) -> Bool) -> [Instance]
 }
