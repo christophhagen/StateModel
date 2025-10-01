@@ -46,12 +46,18 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
         _observer = StateObject(wrappedValue: observer)
     }
 
-    public init<T: Comparable>(filter: @escaping (Result) -> Bool, sort order: QuerySortOrder = .ascending, using: @escaping (Result) -> T) {
+    public init<T: Comparable>(filter: @escaping (Result) -> Bool, sort order: QuerySortOrder, using: @escaping (Result) -> T) {
         let sort: (Result, Result) -> Bool
         switch order {
         case .ascending: sort = { using($0) < using($1) }
         case .descending: sort = { using($0) > using($1) }
         }
+        let observer = QueryManager<Result>(database: nil, filter: filter, order: sort)
+        _observer = StateObject(wrappedValue: observer)
+    }
+
+    public init<T: Comparable>(filter: @escaping (Result) -> Bool, sortBy using: @escaping (Result) -> T) {
+        let sort: (Result, Result) -> Bool = { using($0) < using($1) }
         let observer = QueryManager<Result>(database: nil, filter: filter, order: sort)
         _observer = StateObject(wrappedValue: observer)
     }
