@@ -154,17 +154,14 @@ public class ObservableDatabase: Database, ObservableObject {
 
     private func notifyChangedQueries(model: ModelKey, instance: InstanceKey) {
         guard let queries = cachedQueries[model] else {
-            print("Database: No queries for model \(model) (Update to instance \(instance))")
             return
         }
         var needsCleaning = false
         for box in queries {
             guard let observer = box.value else {
-                print("Database: Found a deallocated observer for queries for model \(model) (Update to instance \(instance))")
                 needsCleaning = true
                 continue
             }
-            print("Database: Notifying observer about update to instance \(instance) for model \(model)")
             observer.didUpdate(instance: instance)
         }
         guard needsCleaning else {
