@@ -1,9 +1,8 @@
 import Testing
 import StateModel
 
-private final class SetModel: TestBaseModel {
-
-    static let modelId = ModelId.testModel.rawValue
+@Model(id: ModelId.testModel.rawValue)
+private final class SetModel {
 
     @ReferenceList(id: 1)
     var list: Set<NestedModel>

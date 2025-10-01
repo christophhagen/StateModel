@@ -14,7 +14,7 @@ public protocol ModelProtocol: ModelInstance {
 
 }
 
-public protocol ModelInstance: AnyObject, Identifiable {
+public protocol ModelInstance: AnyObject, Identifiable, Hashable {
 
     /**
      The unique id of the instance.
@@ -36,6 +36,22 @@ public protocol ModelInstance: AnyObject, Identifiable {
      */
     init(database: Database, id: InstanceKey)
 }
+
+
+extension ModelInstance {
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension ModelInstance {
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
 
 extension ModelProtocol {
 

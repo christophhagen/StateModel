@@ -1,9 +1,8 @@
 import Testing
 import StateModel
 
-private final class OptionalModel: TestBaseModel {
-
-    static let modelId = ModelId.testModel.rawValue
+@Model(id: ModelId.testModel.rawValue)
+private final class OptionalModel {
 
     @Property(id: 1)
     var a: Int?
