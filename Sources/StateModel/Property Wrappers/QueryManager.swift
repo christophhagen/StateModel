@@ -8,14 +8,14 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
     /// The filter to apply to the instances
     let filter: ((Result) -> Bool)?
 
-    let isOrderedBefore: ((Result, Result) -> Bool)?
+    let areInIncreasingOrder: ((Result, Result) -> Bool)?
 
     weak var database: ObservableDatabase?
 
     init(database: ObservableDatabase?, filter: ((Result) -> Bool)? = nil, order: ((Result, Result) -> Bool)? = nil) {
         self.database = database
         self.filter = filter
-        self.isOrderedBefore = order
+        self.areInIncreasingOrder = order
     }
 
     func update(database: ObservableDatabase) {
@@ -25,13 +25,13 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
         self.database = database
         let results: [Result] = database.queryAll(observer: self, where: { _ in true })
         if let filter {
-            if let isOrderedBefore {
-                self.results = results.filter(filter).sorted(by: isOrderedBefore)
+            if let areInIncreasingOrder {
+                self.results = results.filter(filter).sorted(by: areInIncreasingOrder)
             } else {
                 self.results = results.filter(filter)
             }
-        } else if let isOrderedBefore {
-            self.results = results.sorted(by: isOrderedBefore)
+        } else if let areInIncreasingOrder {
+            self.results = results.sorted(by: areInIncreasingOrder)
         } else {
             self.results = results
         }
@@ -42,17 +42,16 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             handleNewInstance(id: id)
             return
         }
-        let instance = results[index]
-        if let filter, !filter(instance) {
+        defer { self.objectWillChange.send() }
+        if let filter, !filter(results[index]) {
             results.remove(at: index)
+            return
         }
-        if let isOrderedBefore {
-            let newIndex = results.firstIndex { !isOrderedBefore($0, instance) } ?? results.endIndex
-            if newIndex != index {
-                results.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex)
-            }
+        guard let areInIncreasingOrder else {
+            return
         }
-        self.objectWillChange.send()
+
+        results.resortElement(at: index, by: areInIncreasingOrder)
     }
 
     private func handleNewInstance(id: InstanceKey) {
@@ -68,8 +67,8 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             return
         }
         // Insert new instance
-        if let isOrderedBefore {
-            let insertIndex = results.firstIndex { !isOrderedBefore($0, instance) } ?? results.endIndex
+        if let areInIncreasingOrder {
+            let insertIndex = results.firstIndex { !areInIncreasingOrder($0, instance) } ?? results.endIndex
             results.insert(instance, at: insertIndex)
         } else {
             results.append(instance)
