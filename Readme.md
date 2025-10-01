@@ -1,7 +1,8 @@
 # StateModel
 
-Sometimes you want to create a small data model, and the common approaches seem overly complicated.
-In those cases `StateModel` may be for you.
+Sometimes you want to create a small data model, without worrying about database schemas, migrations, model contexts and other details.
+In those cases `StateModel` may be a good choice.
+It allows you to define relational models very similar to SwiftData, but with less management overhead, faster integration, and even advanced features like database synchronization.
 
 The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without modifications.
 Just define your models in code, and don't worry about tables, schemas, or any of the low-level details.
@@ -19,7 +20,7 @@ final class Item {
 
 ## Core idea
 
-Here's how it works: A data model usually consists of different model classes, which are identified somehow (think SQLite PRIMARY KEY), and which have some properties assigned (which can point to other models).
+A data model usually consists of different model classes, which are identified somehow (think SQLite PRIMARY KEY), and which have some properties assigned (which can point to other models).
 The idea is to identify each property by a unique "path", which consists of:
 - The id of the model class
 - The id of the instance
@@ -73,32 +74,24 @@ Here's a simple model to explain the concept:
 You could already use this model without any additional work (apart from [choosing a database](#database-selection)).
 Let's discuss the most important parts.
 
-### Conforming to a model
+### Creating a model
 
-Notice how `MyModel` inherits/conforms to `Model<Int, Int, Int>`. `Model` is actually a `typealias` that let's you inherit from a `BaseModel` and makes you conform to `ModelProtocol`.
-The `BaseModel` provides the model with a reference to the database, and a unique id.
-The conformance to `ModelProtocol` forces you to provide a `modelId` and is needed to interact with the database.
-`BaseModel` is a generic type, and requires you to choose types for the model, instance, and property ids (in this case all `Int`).
-More on that [later](#database-selection).
+Notice how `MyModel` has the `@Model` macro attached. 
+The macro adds two properties to the type, a unique `id` for each instance, and a `database` reference.
+It also conforms the type to `ModelProtocol`, which is required for each model.
+Finally, the `id` parameter (`Int`) to the `@Model` macro needs to be unique for each model class, similar to how one would choose a table name for SQLite.
 
-Note that you are free to provide the requirements for `ModelProtocol` yourself, but inheriting from `BaseModel` is usually the right choice.
-
-### Model ID
-
-A unique `modelId` needs to be specified for each model class, similar to how you would choose a table name for SQLite.
-You can freely choose the data type (see [database selection](#database-selection)), but it makes sense to use some integer type.
+ > You are free to provide the requirements for `ModelProtocol` yourself, but using the `@Model` macro is usually the right choice.
 
 ### Properties
 
 Each property of the model that is backed by the database must be annotated with a property wrapper like `@Property` (there are some [others](#references)).
 This wrapper transforms the property, so that the current value is always retrieved from the database.
-This is done by using the `database` property of the model (hidden in `BaseModel`) with the unique path of the property.
-This path is contructed from the `modelId`, the instance `id` (from `BaseModel`), and the id set for `@Property` (`42` in this case).
+This is done by using the `database` property of the model (hidden in `@Model`) with the unique path of the property.
+This path is contructed from the `modelId`, the instance `id` (from `@Model`), and the id set for `@Property`.
 
 The value type in this case is `String`, but any Swift type that conforms to `Codable` can be used.
 It's also possible to provide a default value, which is used if the database does not contain a value for the property (the default value is not written to the database).
-
-Properties already give a quite some options for your models, but a few additional features are needed.
 
 ### References
 
@@ -116,6 +109,8 @@ and there would be no defined value when first creating a model.
 Note that there is no mechanism to automatically handle inverse relationships, that's for you to manage.
 There is also no possibility to specify cascading deletes.
 
+> You may specify implicitly unwrapped optionals like `NestedModel!`, if you can guarantee that the reference can always be resolved. But be careful, as missing data will lead to runtime crashes.
+
 ### Reference Lists
 
 Use `@ReferenceList` to handle one-to-many relationships.
@@ -127,25 +122,24 @@ var other: [NestedModel]
      
 It works in a similar way as `@Reference`, and you can freely modify the list or its elements.
 Internally, the list just manages an array of instance ids.
-`@ReferenceList` can be used out of the box with `Array`, `Set` and `ContiguousArray`. You can also use it with additional sequence types if you conform it to `SequenceInitializable`.
+`@ReferenceList` can be used out of the box with `Array`, `Set` and `ContiguousArray`.
+You can also use it with additional sequence types if you conform it to `SequenceInitializable`.
 
 ## Database selection
 
 In addition to the definition of the models, you need to choose a database.
 
-### Database implementations
-
-#### `InMemoryDatabase`
+### `InMemoryDatabase`
 There is currently only one example implementation provided with `StateModel`, which keeps all data in memory.
 You can directly use this database for initial testing, but production use will likely require persistence.
 
-#### SQLite Database
+### SQLite Database
 
 An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
 It stores SQLite supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
 It also provides caching of last used properties in memory.
 
-#### Custom implementation
+### Custom implementation
 
 You can also [write your own database](#database-implementation) by inheriting from `Database`.
 This gives you all the freedom to store the data in an appropriate format, implement additional features, and apply performance optimizations.
@@ -156,7 +150,7 @@ This gives you all the freedom to store the data in an appropriate format, imple
 Previous versions allowed the use of arbitrary types (e.g. `String`) that conformed to certain requirements.
 This approach has been abandonned due to implementation issues with SwiftUI features, which were due to complex generics, type erasure and polymorphism.
 
-## Usage
+## Model Usage
 
 The models defined using `StateModel` are largely used like any other class in Swift.
 
@@ -270,8 +264,8 @@ It's very important that property ids are unique within a model.
 It may be beneficial to create an `enum` to track all ids:
 
 ```swift
-final class MyModel: MyDatabaseModel {
-    static let modelId = 1
+@Model(id: 1)
+final class MyModel {
     
     enum PropertyId: UInt8 {
         case value = 1
@@ -377,9 +371,17 @@ struct ContentView: View {
         }
     }
 }
+```
 
 In this case `Item` is defined as an `@ObservableModel`.
 The environment must provide the database object, which can be injected using `view.environmentObject(database)`.
+
+It's also possible to directly apply filtering and sorting to the query:
+
+```swift
+@Query(filter: { $0.isCompleted }, sortBy: { $0.name })
+var items: [Item]
+```
 
 ### Synchronization
 
@@ -446,6 +448,7 @@ The following things are currently planned:
 - [x] Viewing objects at a point in time
 - [x] Explore macros to automatically generate property ids (didn't work) 
 - [x] Update notifications similar to `ObservableObject` for use with SwiftUI
+- [x] Implement sorting and filtering for @Query
+- [ ] Provide more sophisticated database synchronization
 - [ ] Non-optional references with a default value
 - [ ] Allow resetting of all properties on deletion
-- [ ] Implement sorting and filtering for @Query
