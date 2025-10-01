@@ -21,10 +21,6 @@ open class BaseModel: ModelInstance {
     }
 }
 
-extension BaseModel: Identifiable {
-
-}
-
 extension BaseModel: Equatable {
 
     public static func == (lhs: BaseModel, rhs: BaseModel) -> Bool {

@@ -14,7 +14,7 @@ public protocol ModelProtocol: ModelInstance {
 
 }
 
-public protocol ModelInstance: AnyObject {
+public protocol ModelInstance: AnyObject, Identifiable {
 
     /**
      The unique id of the instance.
