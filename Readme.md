@@ -8,6 +8,15 @@ Just define your models in code, and don't worry about tables, schemas, or any o
 Then use your models like any other classes, while the model logic fetches all values directly from the database.
 In addition to the simple usage, `StateModel` even works with SwiftUI, provides transactions, historic data, and a simple mechanism to synchronize/merge databases.
 
+```swift
+@Model(id: 1)
+final class Item {
+
+    @Property(id: 1)
+    var name: String
+}
+```
+
 ## Core idea
 
 Here's how it works: A data model usually consists of different model classes, which are identified somehow (think SQLite PRIMARY KEY), and which have some properties assigned (which can point to other models).
@@ -35,7 +44,7 @@ Integrate this package like you would any other:
 ```swift
 ...
     dependencies: [
-        .package(url: "https://github.com/christophhagen/StateModel", from: "3.0.0")
+        .package(url: "https://github.com/christophhagen/StateModel", from: "5.0.0")
     ],
 ...
     .target(
@@ -53,12 +62,11 @@ Integrate this package like you would any other:
 Here's a simple model to explain the concept:
 
  ```swift
- final class MyModel: Model<Int, Int, Int> {
-
-     static let modelId = 1
+ @Model(id: 1)
+ final class MyModel {
 
      @Property(id: 42)
-     var some: String = "Empty"
+     var value: String
  }
  ```
  
@@ -123,9 +131,7 @@ Internally, the list just manages an array of instance ids.
 
 ## Database selection
 
-In addition to the definition of the models, you need to make a few choices for the database, which depend on your use case.
-Essentially, you need to choose a tuple (ModelId, InstanceId, PropertyId) of types that are used to construct the property paths.
-Before writing the
+In addition to the definition of the models, you need to choose a database.
 
 ### Database implementations
 
@@ -137,7 +143,6 @@ You can directly use this database for initial testing, but production use will 
 
 An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
 It stores SQLite supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
-The current implementation restricts the [key paths](#paths) to types that can be represented in SQLite (including `Int` and `String`).
 It also provides caching of last used properties in memory.
 
 #### Custom implementation
@@ -147,59 +152,9 @@ This gives you all the freedom to store the data in an appropriate format, imple
 
 ### ID types
 
-If you choose an existing implementation, then it may have already made decisions on certain implementation details, 
-otherwise you have to decide the types of the ids to use.
-
-The main choice concerns the structure of the paths that define each instance property.
-A path consists of three components: Model ID, Instance ID, Property ID.
-You can think of a path as `model.instance.property`, e.g. `customer.alice.age` (although IDs are recommended to be integers).
-You must select appropriate data types to use for each component.
-
-#### Model Key Type
-
-This type defines the data type to use for the `modelId` which uniquely identifies each model class.
-The recommended type is `UInt8`, which allows you to create 256 different model classes. 
-Select a different model type to allow more, or if you have specific requirements for the ids.
-
-#### Instance Key Type
-
-This type is used for the unique ids of model instances, e.g. the `id` property of every object.
-Its size determines the number of unique instances you can store in the database.
-The recommendation is `UInt32`, which allows you to create 4,294,967,296 different instances for each model class.
-Note that objects of different types are allowed to use the same id, since they will have different `modelId`s.
-
-#### Property Key Type
-
-This type is used to uniquely identify each property of a model class.
-It's the value provided to `@Property`, `@Reference` and `@ReferenceList`.
-It should be sufficient to use `UInt8`, unless you have specific requirements about the id structure.
-
-#### Storage efficiency
-
-The data types of the three path components is important because each property value will be stored using its own path.
-This means that the appropriate selection of the data type can severely affect database performance.
-
-### Specification
-
-Once you have chosen good types, it's recommended to create a `typealias` to define the types to use with your models.
-
-```swift
-typealias MyModel = Model<UInt8, UInt32, UInt8>
-```
-
-In the case of the provided `InMemoryDatabase`, you could write:
-
-```swift
-typealias MyDatabase = InMemoryDatabase<UInt8, UInt32, UInt8>
-```
-
-This will simplify the model definition example from [earlier](#model-definition), so that you can write:
-
-```
-final class SomeModel: MyModel {
-    static let modelId: UInt8 = 1
-}
-```
+`StateModel` uses `Int` values for the `ModelId`, `InstanceId` and `PropertyId`.
+Previous versions allowed the use of arbitrary types (e.g. `String`) that conformed to certain requirements.
+This approach has been abandonned due to implementation issues with SwiftUI features, which were due to complex generics, type erasure and polymorphism.
 
 ## Usage
 
@@ -333,7 +288,6 @@ final class MyModel: MyDatabaseModel {
 
 This may remind you a bit of the `CodingKey` enums in `Codable` conformances,
 except that it's currently not possible to automatically assign ids.
-Note: It's also possible to directly use an enum as a `PropertyKey`, e.g. `Database<Int, Int, MyPropertyKeys`, but then all models in the database must use values from the enum for the property ids.
 
 ### History view
 
@@ -353,16 +307,8 @@ There is no need to update existing model definitions, they can work with both `
 
 ### Switching database implementations
 
-You may sometimes want to use models in different database implementations.
-This is possible as long as the key paths of the databases match.
-
-So given a model specification:
-
-```swift
-typealias MyModel = Model<Int, Int, Int>
-```
-
-you may use the same model in an `InMemoryDatabase<Int, Int, Int>` as well as a `SQLiteDatabase`.
+You may sometimes want to use models in different database implementations,
+which is supported out of the box.
 This makes it possible to use different databases e.g. for testing, or to later migrate to a new database without changing the model code.
 
 ### Editing contexts
@@ -396,8 +342,9 @@ The SwiftUI ecosystem makes heavy use of observations, which are also supported 
 To use models with SwiftUI, simply conform your models to `ObservableModel` instead of `Model`:
 
 ```swift
-final class MyModel: ObservableModel<Int, Int, Int> {
-    static let modelId = 1
+@ObservableModel(id: 1)
+final class MyModel {
+
 }
 ```
 
@@ -410,6 +357,29 @@ let observedDatabase = ObservableDatabase(wrapping: database)
 
 You now use the wrapper in all places where you would normally use the underlying database, e.g. for fetching models.
 It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
+
+### Queries
+
+It's possible to fetch all instances of a specific type in a SwiftUI view, similar to `@Query` provided by SwiftData:
+
+```swift
+struct ContentView: View {
+
+    @EnvironmentObject
+    private var database: ObservableDatabase
+
+    @Query
+    var items: [Item]
+    
+    var body: some View {
+        List(items) { (item: Item) in
+            Text("\(item.name)")
+        }
+    }
+}
+
+In this case `Item` is defined as an `@ObservableModel`.
+The environment must provide the database object, which can be injected using `view.environmentObject(database)`.
 
 ### Synchronization
 
@@ -431,25 +401,23 @@ If the type of a property is changed, then the database will most likely not be 
 If you want to create your own database, here is a minimal example that just caches the data in memory:
 
 ```swift
-final class MinimalDatabase<Key: PathKey>: Database<Key, Key, Key> {
+final class MinimalDatabase: Database {
 
-    typealias KeyPath = Path<Key, Key, Key>
-
-    private var cache: [KeyPath: Any] = [:]
+    private var cache: [Path: Any] = [:]
 
     // MARK: Properties
 
-    override func get<Value>(_ path: KeyPath) -> Value? where Value: Codable {
+    func get<Value: DatabaseValue>(_ path: Path) -> Value? {
         cache[path] as? Value
     }
 
-    override func set<Value>(_ value: Value, for path: KeyPath) where Value: Codable {
+    func set<Value: DatabaseValue>(_ value: Value, for path: Path) {
         cache[path] = value
     }
 
     // MARK: Instances
 
-    override func all<T>(model: Key, where predicate: (_ instanceId: Key, _ value: InstanceStatus) -> T?) -> [T] {
+    func all<T>(model: Int, where predicate: (_ instanceId: Int, _ value: InstanceStatus) -> T?) -> [T] {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
                   path.property == PropertyKey.instanceId,
@@ -467,9 +435,6 @@ Based on this template, you can easily implement caching, synchronization, persi
 
 If you want to track the history of each property, so that you can revert changes or benefit from additional features (like `HistoryView`), then implement a `HistoryDatabase` instead.
 
-> Tip: First conform to `Database` or `HistoryDatabase` to determine all the required functions to implement, then inherit from `Database` and `HistoryDatabase` to complete the implementation.
-> If you inherit from the base classes without overriding the required methods (`get()`, `set()` and `all()`) then a `fatalError` will be produced at runtime.
-
 ## Roadmap
 
 Due to the cleverly simple concept, future features will be fairly easy to add.
@@ -482,3 +447,5 @@ The following things are currently planned:
 - [x] Explore macros to automatically generate property ids (didn't work) 
 - [x] Update notifications similar to `ObservableObject` for use with SwiftUI
 - [ ] Non-optional references with a default value
+- [ ] Allow resetting of all properties on deletion
+- [ ] Implement sorting and filtering for @Query
