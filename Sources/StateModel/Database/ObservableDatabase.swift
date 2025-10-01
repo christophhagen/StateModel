@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /**
  A database wrapper to enable the use of observable models.
@@ -13,7 +14,6 @@ import Foundation
  Instead of adopting the ``Model`` typealias for model definitions, use ``ObservableModel``:
 
  ```swift
-
  final class MyModel: ObservableModel {
 
  }
@@ -37,8 +37,6 @@ public class ObservableDatabase: Database, ObservableObject {
         let instance: InstanceKey
     }
 
-    private typealias ObservedModel = ObservableBaseModel
-
     /// A weak box for caching
     private class WeakBox<T: AnyObject> {
         weak var value: T?
@@ -59,13 +57,20 @@ public class ObservableDatabase: Database, ObservableObject {
 
     // MARK: Instance caching and notification
 
-    private var storage: [ObjectKey : WeakBox<ObservedModel>] = [:]
+    private typealias ObservedModel = ObservableObject & ModelInstance
+
+    private struct WeakModel {
+        weak var value: (any ObservedModel)?
+        init(_ value: any ObservedModel) { self.value = value }
+    }
+
+    private var storage: [ObjectKey : WeakModel] = [:]
 
     private var numberOfObjectsInsertedAfterLastCleanup = 0
 
     private let numberOfInsertionsBetweenCleanup = 1000
 
-    private func getCached<T: ObservedModel>(model: ModelKey, instance: InstanceKey) -> T? {
+    private func getCached(model: ModelKey, instance: InstanceKey) -> (any ObservedModel)? {
         let id = ObjectKey(model: model, instance: instance)
         guard let box = storage[id] else {
             return nil
@@ -74,11 +79,11 @@ public class ObservableDatabase: Database, ObservableObject {
             storage[id] = nil
             return nil
         }
-        return box.value as? T
+        return box.value
     }
 
-    private func cache(_ object: ObservedModel, model: ModelKey, instance: InstanceKey) {
-        storage[ObjectKey(model: model, instance: instance)] = WeakBox(object)
+    private func cache(_ object: any ObservedModel, model: ModelKey, instance: InstanceKey) {
+        storage[ObjectKey(model: model, instance: instance)] = WeakModel(object)
         numberOfObjectsInsertedAfterLastCleanup += 1
         // Remove boxes for deallocated objects
         if numberOfObjectsInsertedAfterLastCleanup >= numberOfInsertionsBetweenCleanup {
@@ -90,13 +95,13 @@ public class ObservableDatabase: Database, ObservableObject {
     private func getCachedOrCreate<T: ModelProtocol>(instance: InstanceKey, notifyExisting: Bool = false) -> T {
         let model = T.modelId
         if let existing = getCached(model: model, instance: instance) as? T {
-            if notifyExisting, let observed = existing as? ObservedModel {
-                observed.objectWillChange.send()
+            if notifyExisting, let observed = existing as? (any ObservedModel) {
+                (observed.objectWillChange as? ObservableObjectPublisher)?.send()
             }
             return existing
         }
         let object = T(database: self, id: instance)
-        if let observed = object as? ObservedModel {
+        if let observed = object as? (any ObservedModel) {
             cache(observed, model: model, instance: instance)
         }
         return object
@@ -104,10 +109,14 @@ public class ObservableDatabase: Database, ObservableObject {
 
     private func notifyChangedObjects(model: ModelKey, instance: InstanceKey) {
         let id = ObjectKey(model: model, instance: instance)
-        guard let obj = storage[id]?.value else {
+        guard let box = storage[id] else {
             return
         }
-        obj.objectWillChange.send()
+        guard let object = box.value else {
+            storage[id] = nil
+            return
+        }
+        (object.objectWillChange as? ObservableObjectPublisher)?.send()
     }
 
     private func cleanup() {
@@ -177,7 +186,7 @@ public class ObservableDatabase: Database, ObservableObject {
     }
 
     public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
-        guard T.self is ObservedModel.Type else {
+        guard T.self is (any ObservedModel.Type) else {
             return wrapped.all(model: model, where: predicate)
         }
         // Find previous instances and return them, to only have a single object
@@ -189,7 +198,7 @@ public class ObservableDatabase: Database, ObservableObject {
             if let cached = self.getCached(model: model, instance: instance) as? T {
                 return cached
             }
-            cache(object as! ObservedModel, model: model, instance: instance)
+            cache(object as! (any ObservedModel), model: model, instance: instance)
             return object
         }
     }
@@ -244,8 +253,8 @@ public class ObservableDatabase: Database, ObservableObject {
     public func delete<Instance: ModelProtocol>(_ instance: Instance) {
         set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
         // Notify instance about deletion status
-        if let observed = instance as? ObservedModel {
-            observed.objectWillChange.send()
+        if let observed = instance as? (any ObservedModel) {
+            (observed.objectWillChange as? ObservableObjectPublisher)?.send()
         }
     }
 

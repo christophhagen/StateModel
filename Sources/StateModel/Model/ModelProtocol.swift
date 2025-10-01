@@ -3,10 +3,7 @@ import Foundation
 /**
  A type that can be represented by a key path structure
  */
-public protocol ModelProtocol: AnyObject {
-
-    /// The database suitable to store data of the model
-    typealias Storage = Database
+public protocol ModelProtocol: ModelInstance {
 
     /**
      The unique ID of this model class when used in a key path.
@@ -14,6 +11,10 @@ public protocol ModelProtocol: AnyObject {
      The model id is the first part of a key path.
      */
     static var modelId: ModelKey { get }
+
+}
+
+public protocol ModelInstance: AnyObject {
 
     /**
      The unique id of the instance.

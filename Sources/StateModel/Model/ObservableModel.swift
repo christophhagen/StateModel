@@ -6,9 +6,7 @@ import Combine
  Instead of adopting the ``Model`` typealias for model definitions, use ``ObservableModel``:
 
  ```swift
- typealias MyModelType = ObservableModel<Int, Int, Int>
-
- final class MyModel: MyModelType {
+ final class MyModel: ObservableModel {
 
  }
  ```
@@ -20,16 +18,12 @@ import Combine
  and accessing all model instances though this wrapper.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public typealias ObservableModel = ObservableBaseModel & ModelProtocol
+public typealias ObservableModel = BaseModel & ObservableObject & ModelProtocol
 
 /**
  The base class for model classes that are observable.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-@MainActor
 open class ObservableBaseModel: BaseModel, ObservableObject {
 
-    public override init(database: any Database, id: BaseModel.InstanceKey) {
-        super.init(database: database, id: id)
-    }
 }

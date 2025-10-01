@@ -5,15 +5,13 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
 
     var results: [Result] = []
 
-    typealias Storage = ObservableDatabase
+    weak var database: ObservableDatabase?
 
-    weak var database: Storage?
-
-    init(database: Storage?) {
+    init(database: ObservableDatabase?) {
         self.database = database
     }
 
-    func update(database: Storage) {
+    func update(database: ObservableDatabase) {
         guard self.database == nil else {
             return
         }
