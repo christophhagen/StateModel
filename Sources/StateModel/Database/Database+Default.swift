@@ -114,12 +114,19 @@ extension Database {
      - Returns: The value of the property, if one exists
      */
     @inline(__always)
-    func get<Value: DatabaseValue>(model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type = Value.self) -> Value? {
+    public func get<Value: DatabaseValue>(model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type = Value.self) -> Value? {
         get(.init(model: model, instance: instance, property: property), of: type)
     }
 
+    /**
+     Get the value for a specific property.
+     - Parameter path: The path of the property- Parameter type: The type of the value.
+     - Returns: The value of the property, if one exists
+
+     This function is useful when the type of `Value` may be incorrectly inferred from the context.
+     */
     @inline(__always)
-    func get<Value: DatabaseValue>(_ path: Path, of type: Value.Type) -> Value? {
+    public func get<Value: DatabaseValue>(_ path: Path, of type: Value.Type) -> Value? {
         get(path)
     }
 
@@ -130,8 +137,20 @@ extension Database {
      - Parameter instance: The unique identifier of the instance
      - Parameter property: The unique identifier of the property
      */
-    public func set<Value: DatabaseValue>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey) {
+    public func set<Value: DatabaseValue>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type = Value.self) {
         set(value, for: .init(model: model, instance: instance, property: property))
+    }
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter path: The path of the property
+     - Parameter type: The type of the value.
+
+     This function is useful when the type of `value` may be incorrectly inferred from the context.
+     */
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path, of type: Value.Type) {
+        set(value, for: path)
     }
 
     // MARK: Queries
