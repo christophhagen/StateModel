@@ -16,50 +16,38 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
     @StateObject
     private var observer: QueryManager<Result>
 
-    public init() {
-        let observer = QueryManager<Result>(database: nil)
+    /**
+     Create a query to dynamically observe instances.
+     - Parameter isIncluded: Optional closure to filter instances
+     - Parameter areInIncreasingOrder: Optional closure to sort the instances
+     */
+    public init(filter isIncluded: ((Result) -> Bool)? = nil, sort areInIncreasingOrder: ((Result, Result) -> Bool)? = nil) {
+        let observer = QueryManager<Result>(database: nil, filter: isIncluded, order: areInIncreasingOrder)
         _observer = StateObject(wrappedValue: observer)
     }
 
-    public init(filter: @escaping (Result) -> Bool) {
-        let observer = QueryManager<Result>(database: nil, filter: filter)
-        _observer = StateObject(wrappedValue: observer)
-    }
-
-    public init(filter: @escaping (Result) -> Bool, sort: @escaping (Result, Result) -> Bool) {
-        let observer = QueryManager<Result>(database: nil, filter: filter, order: sort)
-        _observer = StateObject(wrappedValue: observer)
-    }
-
-    public init(sort: @escaping (Result, Result) -> Bool) {
-        let observer = QueryManager<Result>(database: nil, filter: nil, order: sort)
-        _observer = StateObject(wrappedValue: observer)
-    }
-
-    public init<T: Comparable>(sort order: QuerySortOrder = .ascending, using: @escaping (Result) -> T) {
-        let sort: (Result, Result) -> Bool
+    /**
+     Create a query to dynamically observe instances.
+     - Parameter isIncluded: Optional closure to filter instances
+     - Parameter order: The sort ordering for the instances
+     - Parameter transform: Transform each instance to a value that is used for sorting
+     */
+    public init<T: Comparable>(filter isIncluded: ((Result) -> Bool)? = nil, sort order: QuerySortOrder, using transform: @escaping (Result) -> T) {
         switch order {
-        case .ascending: sort = { using($0) < using($1) }
-        case .descending: sort = { using($0) > using($1) }
+        case .ascending:
+            self.init(filter: isIncluded, sort: { transform($0) < transform($1) })
+        case .descending:
+            self.init(filter: isIncluded, sort: { transform($0) > transform($1) })
         }
-        let observer = QueryManager<Result>(database: nil, filter: nil, order: sort)
-        _observer = StateObject(wrappedValue: observer)
     }
 
-    public init<T: Comparable>(filter: @escaping (Result) -> Bool, sort order: QuerySortOrder, using: @escaping (Result) -> T) {
-        let sort: (Result, Result) -> Bool
-        switch order {
-        case .ascending: sort = { using($0) < using($1) }
-        case .descending: sort = { using($0) > using($1) }
-        }
-        let observer = QueryManager<Result>(database: nil, filter: filter, order: sort)
-        _observer = StateObject(wrappedValue: observer)
-    }
-
-    public init<T: Comparable>(filter: @escaping (Result) -> Bool, sortBy using: @escaping (Result) -> T) {
-        let sort: (Result, Result) -> Bool = { using($0) < using($1) }
-        let observer = QueryManager<Result>(database: nil, filter: filter, order: sort)
-        _observer = StateObject(wrappedValue: observer)
+    /**
+     Create a query to dynamically observe instances.
+     - Parameter isIncluded: Optional closure to filter instances
+     - Parameter transform: Transform each instance to a value that is used for sorting
+     */
+    public init<T: Comparable>(filter isIncluded: ((Result) -> Bool)? = nil, sortBy transform: @escaping (Result) -> T) {
+        self.init(filter: isIncluded, sort: .ascending, using: transform)
     }
 
     public var wrappedValue: [Result] {
