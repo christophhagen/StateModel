@@ -27,6 +27,8 @@ Then use your models like any other classes, while the model logic takes care of
 - Edit history storage and access
 - Database synchronization
 
+> Check out the [example app](https://github.com/christophhagen/StateModelExample) for a demonstration.
+
 ### Table of Contents
 
  * [Core idea](#core-idea)
