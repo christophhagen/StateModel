@@ -383,6 +383,43 @@ It's also possible to directly apply filtering and sorting to the query:
 var items: [Item]
 ```
 
+### Dynamic queries
+
+Filtering and sorting is often controlled by the user, which is why queries are often dynamically adjusted through user input.
+It's possible to update the filter and sort operations by initializing a `Query` via a `QueryDescriptor`:
+
+```swift
+struct QueryView: View {
+
+    @Query var items: [Item]
+
+    @Binding var descriptor: QueryDescriptor<Item>
+
+    init(descriptor: Binding<QueryDescriptor<Item>>) {
+        self._items = Query(descriptor: descriptor.wrappedValue)
+        self._descriptor = descriptor
+    }
+    
+    var body: some View {
+        ...
+    }
+}
+
+struct ContentView: View {
+
+    @State var descriptor: QueryDescriptor<Item> =
+        .init(filter: { !$0.isCompleted },
+              sortBy: { $0.sortIndex })
+    
+    var body: some View {
+        QueryView(descriptor: $descriptor)
+    }
+}
+```
+When `descriptor` is updated, the query will automatically recompute the items.
+This is similar to how SwiftData queries can be modified.
+Internally, the query is recomputed when a new descriptor is provided (every call to `QueryDescriptor.init` creates a unique instance).
+
 ### Synchronization
 
 It's possible to synchronize databases with each other quite easily when you supply your own database solution:
