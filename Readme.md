@@ -39,7 +39,7 @@ Then use your models like any other classes, while the model logic takes care of
    * [Reference Lists](#reference-lists)
    * [Switching database implementations](#switching-database-implementations)
  * [Database selection](#database-selection)
-   * [`InMemoryDatabase`](#inmemorydatabase)
+   * [InMemoryDatabase](#inmemorydatabase)
    * [SQLite Database](#sqlite-database)
    * [Custom implementation](#custom-implementation)
    * [ID types](#id-types)
