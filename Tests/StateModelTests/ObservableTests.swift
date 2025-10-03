@@ -100,26 +100,61 @@ struct ObservableTests {
         }
     }
 
-    @Test("Test filter of query results")
+    @Test("Test query filtering")
     func testFilterOfQueryResults() async throws {
         let baseDatabase = ObservableTestDatabase()
         let database = ObservableDatabase(wrapping: baseDatabase)
 
-        let object1: ObservableTestModel = database.create(id: 123)
-        object1.a = 10
-        let object2: ObservableTestModel = database.create(id: 124)
-        object2.a = 20
-        let object3: ObservableTestModel = database.create(id: 125)
-        object3.a = 30
+        let values = [10, 30, 20, 0, 40]
+        for value in values {
+            let object = database.create(id: value + 100, of: ObservableTestModel.self)
+            object.a = value
+        }
 
-        let descriptor = QueryDescriptor<ObservableTestModel>(filter: { $0.a > 15 })
+        let descriptor = QueryDescriptor<ObservableTestModel>(filter: { $0.a < 15 || $0.a > 25 })
         let observer = QueryManager<ObservableTestModel>(database: database, descriptor: descriptor)
         observer.refreshResults()
-        let above15 = observer.results
-        #expect(above15.count == 2)
+        let filtered = observer.results
+        #expect(filtered.count == 4)
+        #expect(Set(filtered.map { $0.a }) == [0, 10, 30, 40])
+    }
 
-        let above25: [ObservableTestModel] = database.queryAll(observer: observer, where: { $0.a > 25 })
-        #expect(above25.count == 1)
+    @Test("Test query sorting")
+    func testSortingOfQueryResults() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let values = [10, 30, 20, 0, 40]
+        for value in values {
+            let object = database.create(id: value + 100, of: ObservableTestModel.self)
+            object.a = value
+        }
+
+        let descriptor = QueryDescriptor<ObservableTestModel>(sortBy: { $0.a })
+        let observer = QueryManager<ObservableTestModel>(database: database, descriptor: descriptor)
+        observer.refreshResults()
+        let all = observer.results
+        #expect(all.count == 5)
+        #expect(all.map { $0.a } == [0, 10, 20, 30, 40])
+    }
+
+    @Test("Test query sorting and filtering")
+    func testSortingAndFilteringOfQueryResults() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let values = [10, 30, 20, 0, 40]
+        for value in values {
+            let object = database.create(id: value + 100, of: ObservableTestModel.self)
+            object.a = value
+        }
+
+        let descriptor = QueryDescriptor<ObservableTestModel>(filter: { $0.a > 5 && $0.a < 35 }, sortBy: { $0.a })
+        let observer = QueryManager<ObservableTestModel>(database: database, descriptor: descriptor)
+        observer.refreshResults()
+        let all = observer.results
+        #expect(all.count == 3)
+        #expect(all.map { $0.a } == [10, 20, 30])
     }
 }
 
