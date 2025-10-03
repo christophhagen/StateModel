@@ -138,15 +138,24 @@ public class ObservableDatabase: Database, ObservableObject {
     private var cachedQueries: [ModelKey : [WeakBox<QueryObserver>]] = [:]
 
     public func queryAll<Instance: ModelProtocol>(observer: QueryObserver, where predicate: (Instance) -> Bool) -> [Instance] {
+        let model = Instance.modelId
         // Register query to notify on future changes
-        cachedQueries[Instance.modelId, default: []].append(.init(observer))
-        return wrapped.all(model: Instance.modelId) { instanceId, status in
+        cachedQueries[model, default: []].append(.init(observer))
+        return wrapped.all(model: model) { instanceId, status in
             guard status == .created else {
                 return nil
             }
+            // We first construct an instance to test against the predicate
+            // and only get or create the observed object if it's actually needed
             let instance = Instance(database: self, id: instanceId)
             guard predicate(instance) else {
                 return nil
+            }
+            if let cached = self.getCached(model: model, instance: instanceId) as? Instance {
+                return cached
+            }
+            if let observable = instance as? (any ObservedModel) {
+                cache(observable, model: model, instance: instanceId)
             }
             return instance
         }
@@ -192,9 +201,15 @@ public class ObservableDatabase: Database, ObservableObject {
             guard let object: T = predicate(instance, status) else {
                 return nil
             }
+            // Note: The actual object returned by the predicate may be replaced
+            // if a cached version of the object exists
+            // This is needed to ensure that objects are properly notified about changes,
+            // but it may break complex scenarios where the user initializes `object` in a
+            // non-trivial way (with custom internal state not stored in the database)
             if let cached = self.getCached(model: model, instance: instance) as? T {
                 return cached
             }
+            // We can force-cast here, since we checked in the beginning that T is an ObservableModel
             cache(object as! (any ObservedModel), model: model, instance: instance)
             return object
         }
@@ -265,6 +280,8 @@ public class ObservableDatabase: Database, ObservableObject {
             guard status == .created else {
                 return nil
             }
+            // Note: We don't need to check the cache or observe the instance here
+            // because it will be replaced by the all(model:where:) function when returned
             let instance = Instance(database: self, id: instanceId)
             guard predicate(instance) else {
                 return nil
