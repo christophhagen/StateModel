@@ -16,6 +16,8 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
     @StateObject
     private var observer: QueryManager<Result>
 
+    private let descriptor: QueryDescriptor<Result>
+
     /**
      Create a query to dynamically observe instances.
      - Parameter isIncluded: Optional closure to filter instances
@@ -32,13 +34,13 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
      - Note: The results of the query will be updated whenever a new descriptor object is provided
      */
     public init(descriptor: QueryDescriptor<Result>) {
+        self.descriptor = descriptor
         let observer = QueryManager<Result>(database: nil, descriptor: descriptor)
         _observer = StateObject(wrappedValue: observer)
         // Note: The initializer for StateObject is only considered for the first
         // invocation in the views lifetime.
         // We therefore update the descriptor directly on the observer,
         // which is only applied if it actually changed.
-        _observer.wrappedValue.update(descriptor: descriptor)
     }
 
     /**
@@ -71,5 +73,6 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
 
     mutating public func update() {
         observer.update(database: database)
+        observer.update(descriptor: descriptor)
     }
 }
