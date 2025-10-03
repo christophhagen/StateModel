@@ -31,7 +31,6 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
     }
 
     private func refreshResults() {
-        defer { self.objectWillChange.send() }
         guard let database else {
             self.results = []
             return
