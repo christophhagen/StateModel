@@ -30,7 +30,7 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
         refreshResults()
     }
 
-    private func refreshResults() {
+    func refreshResults() {
         guard let database else {
             self.results = []
             return

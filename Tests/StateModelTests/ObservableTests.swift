@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-import StateModel
+@testable import StateModel
 import Combine
 
 private typealias ObservableTestDatabase = InMemoryDatabase
@@ -98,6 +98,28 @@ struct ObservableTests {
         await observeChange(to: referenced, "No update triggered for nested object") {
             nested.value = 43
         }
+    }
+
+    @Test("Test filter of query results")
+    func testFilterOfQueryResults() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let object1: ObservableTestModel = database.create(id: 123)
+        object1.a = 10
+        let object2: ObservableTestModel = database.create(id: 124)
+        object2.a = 20
+        let object3: ObservableTestModel = database.create(id: 125)
+        object3.a = 30
+
+        let descriptor = QueryDescriptor<ObservableTestModel>(filter: { $0.a > 15 })
+        let observer = QueryManager<ObservableTestModel>(database: database, descriptor: descriptor)
+        observer.refreshResults()
+        let above15 = observer.results
+        #expect(above15.count == 2)
+
+        let above25: [ObservableTestModel] = database.queryAll(observer: observer, where: { $0.a > 25 })
+        #expect(above25.count == 1)
     }
 }
 
