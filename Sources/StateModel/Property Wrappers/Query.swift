@@ -39,7 +39,7 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
         _observer = StateObject(wrappedValue: observer)
         // Note: The initializer for StateObject is only considered for the first
         // invocation in the views lifetime.
-        // We therefore update the descriptor directly on the observer,
+        // We therefore update the descriptor again in update()
         // which is only applied if it actually changed.
     }
 
