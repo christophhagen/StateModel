@@ -5,17 +5,21 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
 
     var results: [Result] = []
 
-    /// The filter to apply to the instances
-    let filter: ((Result) -> Bool)?
-
-    let areInIncreasingOrder: ((Result, Result) -> Bool)?
+    private var descriptor: QueryDescriptor<Result>
 
     weak var database: ObservableDatabase?
 
-    init(database: ObservableDatabase?, filter: ((Result) -> Bool)? = nil, order: ((Result, Result) -> Bool)? = nil) {
+    init(database: ObservableDatabase?, descriptor: QueryDescriptor<Result>) {
         self.database = database
-        self.filter = filter
-        self.areInIncreasingOrder = order
+        self.descriptor = descriptor
+    }
+
+    func update(descriptor: QueryDescriptor<Result>) {
+        guard self.descriptor != descriptor else {
+            return
+        }
+        self.descriptor = descriptor
+        refreshResults()
     }
 
     func update(database: ObservableDatabase) {
@@ -23,9 +27,17 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             return
         }
         self.database = database
-        let filter = self.filter ?? { _ in true }
-        let results: [Result] = database.queryAll(observer: self, where: filter)
-        if let areInIncreasingOrder {
+        refreshResults()
+    }
+
+    private func refreshResults() {
+        defer { self.objectWillChange.send() }
+        guard let database else {
+            self.results = []
+            return
+        }
+        let results: [Result] = database.queryAll(observer: self, where: descriptor.isIncluded)
+        if let areInIncreasingOrder = self.descriptor.areInIncreasingOrder {
             self.results = results.sorted(by: areInIncreasingOrder)
         } else {
             self.results = results
@@ -38,11 +50,11 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             return
         }
         defer { self.objectWillChange.send() }
-        if let filter, !filter(results[index]) {
+        if let isIncluded = descriptor.isIncluded, !isIncluded(results[index]) {
             results.remove(at: index)
             return
         }
-        guard let areInIncreasingOrder else {
+        guard let areInIncreasingOrder = descriptor.areInIncreasingOrder else {
             return
         }
 
@@ -58,11 +70,11 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             return
         }
         // Filter out instances
-        if let filter, !filter(instance) {
+        if let isIncluded = descriptor.isIncluded, !isIncluded(instance) {
             return
         }
         // Insert new instance
-        if let areInIncreasingOrder {
+        if let areInIncreasingOrder = descriptor.areInIncreasingOrder {
             let insertIndex = results.firstIndex { !areInIncreasingOrder($0, instance) } ?? results.endIndex
             results.insert(instance, at: insertIndex)
         } else {

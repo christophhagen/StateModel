@@ -137,7 +137,10 @@ public class ObservableDatabase: Database, ObservableObject {
 
     private var cachedQueries: [ModelKey : [WeakBox<QueryObserver>]] = [:]
 
-    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver, where predicate: (Instance) -> Bool) -> [Instance] {
+    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver, where predicate: ((Instance) -> Bool)?) -> [Instance] {
+        guard let predicate else {
+            return queryAll(observer: observer)
+        }
         let model = Instance.modelId
         // Register query to notify on future changes
         cachedQueries[model, default: []].append(.init(observer))
@@ -154,6 +157,25 @@ public class ObservableDatabase: Database, ObservableObject {
             if let cached = self.getCached(model: model, instance: instanceId) as? Instance {
                 return cached
             }
+            if let observable = instance as? (any ObservedModel) {
+                cache(observable, model: model, instance: instanceId)
+            }
+            return instance
+        }
+    }
+
+    public func queryAll<Instance: ModelProtocol>(observer: QueryObserver) -> [Instance] {
+        let model = Instance.modelId
+        // Register query to notify on future changes
+        cachedQueries[model, default: []].append(.init(observer))
+        return wrapped.all(model: model) { instanceId, status in
+            guard status == .created else {
+                return nil
+            }
+            if let cached = self.getCached(model: model, instance: instanceId) as? Instance {
+                return cached
+            }
+            let instance = Instance(database: self, id: instanceId)
             if let observable = instance as? (any ObservedModel) {
                 cache(observable, model: model, instance: instanceId)
             }
