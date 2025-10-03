@@ -4,11 +4,6 @@ Sometimes you want to create a small data model, without worrying about database
 In those cases `StateModel` may be a good choice.
 It allows you to define relational models very similar to SwiftData, but with less management overhead, faster integration, and even advanced features like database synchronization.
 
-The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without modifications.
-Just define your models in code, and don't worry about tables, schemas, or any of the low-level details.
-Then use your models like any other classes, while the model logic fetches all values directly from the database.
-In addition to the simple usage, `StateModel` even works with SwiftUI, provides transactions, historic data, and a simple mechanism to synchronize/merge databases.
-
 ```swift
 @Model(id: 1)
 final class Item {
@@ -18,7 +13,54 @@ final class Item {
 }
 ```
 
-## Core idea
+The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without defining a complex structure.
+Just define your models in code, and don't worry about tables, schemas, or any of the low-level details.
+Then use your models like any other classes, while the model logic takes care of the rest.
+
+`StateModel` has many useful features:
+
+- Simple model definitions
+- No database design needed
+- SwiftUI support
+- Codable support
+- Editing contexts
+- Edit history storage and access
+- Database synchronization
+
+### Table of Contents
+    + [Core idea](#core-idea)
+    + [Installation](#installation)
+  * [Model definition](#model-definition)
+    + [Creating a model](#creating-a-model)
+    + [SwiftUI support](#swiftui-support)
+    + [Properties](#properties)
+    + [References](#references)
+    + [Reference Lists](#reference-lists)
+    + [Switching database implementations](#switching-database-implementations)
+  * [Database selection](#database-selection)
+    + [`InMemoryDatabase`](#inmemorydatabase)
+    + [SQLite Database](#sqlite-database)
+    + [Custom implementation](#custom-implementation)
+    + [ID types](#id-types)
+  * [Usage](#usage)
+    + [Object creation](#object-creation)
+    + [Properties](#properties-1)
+    + [References](#references-1)
+    + [Model status](#model-status)
+    + [References to deleted objects](#references-to-deleted-objects)
+    + [Restoring objects](#restoring-objects)
+    + [Queries](#queries)
+    + [Dynamic queries](#dynamic-queries)
+  * [Additional features](#additional-features)
+    + [History view](#history-view)
+    + [Editing contexts](#editing-contexts)
+    + [Synchronization](#synchronization)
+    + [Migration](#migration)
+    + [Custom database implementation](#custom-database-implementation)
+  * [Tips and Tricks](#tips-and-tricks)
+    + [Property Id Enum](#property-id-enum)
+
+### Core idea
 
 A data model usually consists of different model classes, which are identified somehow (think SQLite PRIMARY KEY), and which have some properties assigned (which can point to other models).
 The idea is to identify each property by a unique "path", which consists of:
@@ -38,7 +80,7 @@ func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status
 This very compact interface makes it incredibly easy to write a database implementation, and there is no need to specify tables, schemas or anything else.
 Interacting with the data model is done through lightweight wrappers, which define the model structure, and simply use the get/set functions of the database with the correct paths.
 
-## Installation
+### Installation
 
 Integrate this package like you would any other:
 
@@ -83,9 +125,30 @@ Finally, the `id` parameter (`Int`) to the `@Model` macro needs to be unique for
 
  > You are free to provide the requirements for `ModelProtocol` yourself, but using the `@Model` macro is usually the right choice.
 
+### SwiftUI support
+
+If you want to use the models with [SwiftUI](https://developer.apple.com/swiftui/), use `@ObservableModel` instead of `@Model`, otherwise automatic view updates will not work.
+
+```swift
+@ObservableModel(id: 1)
+final class MyModel {
+
+}
+```
+
+Now the only additional thing needed is to wrap your database to track objects and notify them of changes:
+
+```swift
+let database = MyDatabase()
+let observedDatabase = ObservableDatabase(wrapping: database)
+```
+
+You now use the wrapper in all places where you would normally use the underlying database, e.g. for fetching models.
+It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
+
 ### Properties
 
-Each property of the model that is backed by the database must be annotated with a property wrapper like `@Property` (there are some [others](#references)).
+Each property of the model that is backed by the database must be annotated with a property wrapper like `@Property`.
 This wrapper transforms the property, so that the current value is always retrieved from the database.
 This is done by using the `database` property of the model (hidden in `@Model`) with the unique path of the property.
 This path is contructed from the `modelId`, the instance `id` (from `@Model`), and the id set for `@Property`.
@@ -125,32 +188,42 @@ Internally, the list just manages an array of instance ids.
 `@ReferenceList` can be used out of the box with `Array`, `Set` and `ContiguousArray`.
 You can also use it with additional sequence types if you conform it to `SequenceInitializable`.
 
+`@ReferenceList` can also be used for many-to-many relationships.
+Remember that you must take care of the relationships yourself.
+
+### Switching database implementations
+
+You may sometimes want to use models in different database implementations,
+which is supported out of the box.
+This makes it possible to use different databases e.g. for testing, or to later migrate to a new database without changing the model code.
+
 ## Database selection
 
 In addition to the definition of the models, you need to choose a database.
 
-### `InMemoryDatabase`
+#### InMemoryDatabase
 There is currently only one example implementation provided with `StateModel`, which keeps all data in memory.
 You can directly use this database for initial testing, but production use will likely require persistence.
+You can also use `InMemoryHistoryDatabase` for a full edit history.
 
-### SQLite Database
+#### SQLite Database
 
 An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
 It stores SQLite supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
 It also provides caching of last used properties in memory.
 
-### Custom implementation
+#### Custom implementation
 
-You can also [write your own database](#database-implementation) by inheriting from `Database`.
+You can also [write your own database](#custom-database-implementation) by inheriting from `Database`.
 This gives you all the freedom to store the data in an appropriate format, implement additional features, and apply performance optimizations.
 
-### ID types
+#### ID types
 
 `StateModel` uses `Int` values for the `ModelId`, `InstanceId` and `PropertyId`.
 Previous versions allowed the use of arbitrary types (e.g. `String`) that conformed to certain requirements.
 This approach has been abandonned due to implementation issues with SwiftUI features, which were due to complex generics, type erasure and polymorphism.
 
-## Model Usage
+## Usage
 
 The models defined using `StateModel` are largely used like any other class in Swift.
 
@@ -170,7 +243,7 @@ Since each model requires a database reference, any modification will be written
 even if the actual instance is not registered with the database.
 To modify objects without writing to the database, and commiting all changes at once, see [editing contexts](#editing-contexts).
 
-### Property modification
+### Properties
 
 Any of the `@Property` attributes on a model can be modified as you would normally do:
 
@@ -258,100 +331,6 @@ print(newModel.value) // Prints "12"
 
 You should therefore be careful when reusing instance ids.
 
-### Property Id Enum
-
-It's very important that property ids are unique within a model.
-It may be beneficial to create an `enum` to track all ids:
-
-```swift
-@Model(id: 1)
-final class MyModel {
-    
-    enum PropertyId: UInt8 {
-        case value = 1
-        case otherValue = 2
-    }
-    
-    @Property(id: PropertyId.value.rawValue)
-    var value: String
-    
-    @Property(id: PropertyId.otherValue.rawValue)
-    var otherValue: Double
-}
-```
-
-This may remind you a bit of the `CodingKey` enums in `Codable` conformances,
-except that it's currently not possible to automatically assign ids.
-
-### History view
-
-In many cases it will be sufficient to track the *current* state of the database.
-But if you need to also access historic data, then you need to choose (or implement) a `HistoryDatabase`.
-It provides all the features of a standard `Database`, but additionally allows you to view the database at a specific point in time:
-
-```swift
-let database = MyHistoryDatabase()
-let yesterday = Date().addingTimeInterval(-86400)
-let view = database.view(at: yesterday)
-```
-
-You can use the `HistoryView` in the same way as any other `Database`, and query model instances from it.
-Note that making edits to a history view is not supported, and all modifications will be ignored.
-There is no need to update existing model definitions, they can work with both `Database` and `HistoryDatabase`.
-
-### Switching database implementations
-
-You may sometimes want to use models in different database implementations,
-which is supported out of the box.
-This makes it possible to use different databases e.g. for testing, or to later migrate to a new database without changing the model code.
-
-### Editing contexts
-
-In real applications you may want to first create new instances or change data, and then commit all of it to the database when ready.
-This feature is made possible by contexts, which (similar to `ModelContext` in SwiftData) store all modifications until you save them.
-
-```swift
-let database = MyDatabase()
-let context = database.createEditingContext()
-
-let newItem: SomeModel = context.create(id: 123)
-newItem.value = 42
-
-context.commitChanges() // Saves the item to the database
-```
-
-For databases that also store a history (`HistoryDatabase`), 
-you can also create a context that uses a snapshot of the database at the current date:
-
-```swift
-let database = MyHistoryDatabase()
-let context = database.createEditingContextWithCurrentState()
-```
-
-Changes made to the database will then not appear in the context.
-
-### SwiftUI observations
-
-The SwiftUI ecosystem makes heavy use of observations, which are also supported with `StateModel`.
-To use models with SwiftUI, simply conform your models to `ObservableModel` instead of `Model`:
-
-```swift
-@ObservableModel(id: 1)
-final class MyModel {
-
-}
-```
-
-Now the only additional thing needed is to wrap your database to track objects and notify them of changes:
-
-```swift
-let database = MyDatabase()
-let observedDatabase = ObservableDatabase(wrapping: database)
-```
-
-You now use the wrapper in all places where you would normally use the underlying database, e.g. for fetching models.
-It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
-
 ### Queries
 
 It's possible to fetch all instances of a specific type in a SwiftUI view, similar to `@Query` provided by SwiftData:
@@ -420,6 +399,49 @@ When `descriptor` is updated, the query will automatically recompute the items.
 This is similar to how SwiftData queries can be modified.
 Internally, the query is recomputed when a new descriptor is provided (every call to `QueryDescriptor.init` creates a unique instance).
 
+## Additional features
+
+### History view
+
+In many cases it will be sufficient to track the *current* state of the database.
+But if you need to also access historic data, then you need to choose (or implement) a `HistoryDatabase`.
+It provides all the features of a standard `Database`, but additionally allows you to view the database at a specific point in time:
+
+```swift
+let database = MyHistoryDatabase()
+let yesterday = Date().addingTimeInterval(-86400)
+let view = database.view(at: yesterday)
+```
+
+You can use the `HistoryView` in the same way as any other `Database`, and query model instances from it.
+Note that making edits to a history view is not supported, and all modifications will be ignored.
+There is no need to update existing model definitions, they can work with both `Database` and `HistoryDatabase`.
+
+### Editing contexts
+
+In real applications you may want to first create new instances or change data, and then commit all of it to the database when ready.
+This feature is made possible by contexts, which (similar to `ModelContext` in SwiftData) store all modifications until you save them.
+
+```swift
+let database = MyDatabase()
+let context = database.createEditingContext()
+
+let newItem: SomeModel = context.create(id: 123)
+newItem.value = 42
+
+context.commitChanges() // Saves the item to the database
+```
+
+For databases that also store a history (`HistoryDatabase`), 
+you can also create a context that uses a snapshot of the database at the current date:
+
+```swift
+let database = MyHistoryDatabase()
+let context = database.createEditingContextWithCurrentState()
+```
+
+Changes made to the database will then not appear in the context.
+
 ### Synchronization
 
 It's possible to synchronize databases with each other quite easily when you supply your own database solution:
@@ -435,7 +457,7 @@ There isn't much migrating to do for models in `StateModel`, since there are no 
 Adding additional properties can be done without problems, since each new property will use the specified default if no value exists.
 If the type of a property is changed, then the database will most likely not be able to decode the values anymore, which will cause the defaults to be applied.
 
-## Database implementation
+### Custom database implementation
 
 If you want to create your own database, here is a minimal example that just caches the data in memory:
 
@@ -474,18 +496,58 @@ Based on this template, you can easily implement caching, synchronization, persi
 
 If you want to track the history of each property, so that you can revert changes or benefit from additional features (like `HistoryView`), then implement a `HistoryDatabase` instead.
 
+## Tips and Tricks
+
+### Model Id Enum
+
+Each `@Model` requires a unique id, which you might want to collect in an enum:
+
+```swift
+enum ModelId: Int {
+    case item = 1
+    case message = 2
+    case reminder = 3
+}
+```
+
+Then specify your models using the enum:
+
+```swift
+@Model(id: ModelId.item.rawValue)
+class Item {
+
+}
+```
+
+### Property Id Enum
+
+Similar to the model ids, it may be beneficial to create an `enum` to track the property ids for each class:
+
+```swift
+@Model(id: 1)
+final class MyModel {
+    
+    enum PropertyId: Int {
+        case value = 1
+        case otherValue = 2
+    }
+    
+    @Property(id: PropertyId.value.rawValue)
+    var value: String
+    
+    @Property(id: PropertyId.otherValue.rawValue)
+    var otherValue: Double
+}
+```
+
+This may remind you a bit of the `CodingKey` enums in `Codable` conformances,
+except that it's currently not possible to automatically assign ids.
+
+
 ## Roadmap
 
-Due to the cleverly simple concept, future features will be fairly easy to add.
-The following things are currently planned:
+The following features are currently planned:
 
-- [x] Database implementations
-- [x] Support different databases for models (e.g. for testing and production)
-- [x] Editing contexts with undo and save
-- [x] Viewing objects at a point in time
-- [x] Explore macros to automatically generate property ids (didn't work) 
-- [x] Update notifications similar to `ObservableObject` for use with SwiftUI
-- [x] Implement sorting and filtering for @Query
-- [ ] Provide more sophisticated database synchronization
-- [ ] Non-optional references with a default value
-- [ ] Allow resetting of all properties on deletion
+- More sophisticated database synchronization
+- Generate a `PropertyId` enum for each model, to detect id collisions
+- Resetting of all properties on deletion
