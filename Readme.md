@@ -59,7 +59,6 @@ Then use your models like any other classes, while the model logic takes care of
    * [Migration](#migration)
    * [Custom database implementation](#custom-database-implementation)
  * [Tips and Tricks](#tips-and-tricks)
-   * [Property Id Enum](#property-id-enum)
 
 ### Core idea
 
