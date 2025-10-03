@@ -23,14 +23,9 @@ final class QueryManager<Result: ModelProtocol>: QueryObserver {
             return
         }
         self.database = database
-        let results: [Result] = database.queryAll(observer: self, where: { _ in true })
-        if let filter {
-            if let areInIncreasingOrder {
-                self.results = results.filter(filter).sorted(by: areInIncreasingOrder)
-            } else {
-                self.results = results.filter(filter)
-            }
-        } else if let areInIncreasingOrder {
+        let filter = self.filter ?? { _ in true }
+        let results: [Result] = database.queryAll(observer: self, where: filter)
+        if let areInIncreasingOrder {
             self.results = results.sorted(by: areInIncreasingOrder)
         } else {
             self.results = results
