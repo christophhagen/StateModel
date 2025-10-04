@@ -6,11 +6,16 @@ It allows you to define relational models very similar to SwiftData, but with le
 
 ```swift
 @Model(id: 1)
-final class Item {
+final class Person {
 
     @Property(id: 1)
     var name: String
 }
+
+let database = InMemoryDatabase()
+
+let alice = database.create(id: 123)
+alice.name = "Alice"
 ```
 
 The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without defining a complex structure.
