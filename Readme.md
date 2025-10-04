@@ -5,6 +5,8 @@ In those cases `StateModel` may be a good choice.
 It allows you to define relational models very similar to SwiftData, but with less management overhead, faster integration, and even advanced features like database synchronization.
 
 ```swift
+import StateModel
+
 @Model(id: 1)
 final class Person {
 
@@ -14,7 +16,7 @@ final class Person {
 
 let database = InMemoryDatabase()
 
-let alice = database.create(id: 123)
+let alice: Person = database.create(id: 123)
 alice.name = "Alice"
 ```
 
