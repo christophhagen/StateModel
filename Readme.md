@@ -16,8 +16,7 @@ final class Person {
 
 let database = InMemoryDatabase()
 
-let alice: Person = database.create(id: 123)
-alice.name = "Alice"
+let alice = Person.create(in: database, id: 123, name: "Alice)
 ```
 
 The main idea is to flatten models into a very simple, generic structure, so that you can use a standard database without defining a complex structure.
