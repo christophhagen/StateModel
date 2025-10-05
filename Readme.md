@@ -117,7 +117,7 @@ Here's a simple model to explain the concept:
      var value: String
  }
  ```
- 
+
 You could already use this model without any additional work (apart from [choosing a database](#database-selection)).
 Let's discuss the most important parts.
 
@@ -132,23 +132,15 @@ Finally, the `id` parameter (`Int`) to the `@Model` macro needs to be unique for
 
 ### SwiftUI support
 
-If you want to use the models with [SwiftUI](https://developer.apple.com/swiftui/), use `@ObservableModel` instead of `@Model`, otherwise automatic view updates will not work.
-
-```swift
-@ObservableModel(id: 1)
-final class MyModel {
-
-}
-```
-
-Now the only additional thing needed is to wrap your database to track objects and notify them of changes:
+All models conform to `ObservableObject`, and can be used in SwiftUI views.
+The only additional thing needed is to wrap your database to track objects and notify them of changes:
 
 ```swift
 let database = MyDatabase()
 let observedDatabase = ObservableDatabase(wrapping: database)
 ```
 
-You now use the wrapper in all places where you would normally use the underlying database, e.g. for fetching models.
+The wrapper is then used in all places where you would normally use the underlying database, e.g. for fetching models.
 It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
 
 ### Properties
@@ -357,7 +349,6 @@ struct ContentView: View {
 }
 ```
 
-In this case `Item` is defined as an `@ObservableModel`.
 The environment must provide the database object, which can be injected using `view.environmentObject(database)`.
 
 It's also possible to directly apply filtering and sorting to the query:
@@ -369,7 +360,7 @@ var items: [Item]
 
 ### Dynamic queries
 
-Filtering and sorting is often controlled by the user, which is why queries are often dynamically adjusted through user input.
+Filtering and sorting is often controlled by the user, which is why queries can be dynamically adjusted through user input.
 It's possible to update the filter and sort operations by initializing a `Query` via a `QueryDescriptor`:
 
 ```swift

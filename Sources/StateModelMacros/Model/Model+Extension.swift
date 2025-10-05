@@ -2,7 +2,6 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import Foundation
 
-
 extension ModelMacro: ExtensionMacro {
 
     public static func expansion(
@@ -13,9 +12,8 @@ extension ModelMacro: ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         [
-            try ExtensionDeclSyntax("extension \(type): ModelProtocol") {
-                
-            }
+            try ExtensionDeclSyntax("extension \(type): ModelProtocol") { },
+            try ExtensionDeclSyntax("extension \(type): ObservableObject") { }
         ]
     }
 }

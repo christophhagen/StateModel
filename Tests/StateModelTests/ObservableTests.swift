@@ -5,7 +5,7 @@ import Combine
 
 private typealias ObservableTestDatabase = InMemoryDatabase
 
-@ObservableModel(id: 1)
+@Model(id: 1)
 private final class ObservableTestModel {
 
     @Property(id: 1)
@@ -18,7 +18,7 @@ private final class ObservableTestModel {
     var items: [ObservableNestedModel]
 }
 
-@ObservableModel(id: 2)
+@Model(id: 2)
 private final class ObservableNestedModel {
 
     @Property(id: 1)

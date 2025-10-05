@@ -4,7 +4,6 @@ import SwiftSyntaxMacros
 @main
 struct StateModelPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        ModelMacro.self,
-        ObservableModelMacro.self
+        ModelMacro.self
     ]
 }

@@ -10,17 +10,8 @@ import Combine
  let database = MyDatabase()
  let observingDatabase = ObservableDatabase(wrapping: database)
  ```
-
- Instead of adopting the ``Model`` typealias for model definitions, use ``ObservableModel``:
-
- ```swift
- final class MyModel: ObservableModel {
-
- }
- ```
-
- It's then possible to use your model types in SwiftUI views, as they conform to ``ObservableObject``.
- Whenever a property is changed in the database, the existing object is notified about the change, redrawing SwiftUI views.
+ The database ensures that only a single object is used throughout all operations for each instance of a model.
+ Whenever a property is changed in the database, the singular object is notified about the change, redrawing SwiftUI views.
  */
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public class ObservableDatabase: Database, ObservableObject {
@@ -95,15 +86,13 @@ public class ObservableDatabase: Database, ObservableObject {
     private func getCachedOrCreate<T: ModelProtocol>(instance: InstanceKey, notifyExisting: Bool = false) -> T {
         let model = T.modelId
         if let existing = getCached(model: model, instance: instance) as? T {
-            if notifyExisting, let observed = existing as? (any ObservedModel) {
-                (observed.objectWillChange as? ObservableObjectPublisher)?.send()
+            if notifyExisting {
+                (existing.objectWillChange as? ObservableObjectPublisher)?.send()
             }
             return existing
         }
         let object = T(database: self, id: instance)
-        if let observed = object as? (any ObservedModel) {
-            cache(observed, model: model, instance: instance)
-        }
+        cache(object, model: model, instance: instance)
         return object
     }
 
@@ -157,9 +146,7 @@ public class ObservableDatabase: Database, ObservableObject {
             if let cached = self.getCached(model: model, instance: instanceId) as? Instance {
                 return cached
             }
-            if let observable = instance as? (any ObservedModel) {
-                cache(observable, model: model, instance: instanceId)
-            }
+            cache(instance, model: model, instance: instanceId)
             return instance
         }
     }
@@ -176,9 +163,7 @@ public class ObservableDatabase: Database, ObservableObject {
                 return cached
             }
             let instance = Instance(database: self, id: instanceId)
-            if let observable = instance as? (any ObservedModel) {
-                cache(observable, model: model, instance: instanceId)
-            }
+            cache(instance, model: model, instance: instanceId)
             return instance
         }
     }
@@ -214,6 +199,8 @@ public class ObservableDatabase: Database, ObservableObject {
     }
 
     public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
+        // Note: We need to check if the type is observable,
+        // because T is not restricted, and users may produce non-observable results
         guard T.self is (any ObservedModel.Type) else {
             return wrapped.all(model: model, where: predicate)
         }
@@ -231,7 +218,7 @@ public class ObservableDatabase: Database, ObservableObject {
             if let cached = self.getCached(model: model, instance: instance) as? T {
                 return cached
             }
-            // We can force-cast here, since we checked in the beginning that T is an ObservableModel
+            // We can force-cast here, since we checked in the beginning that T is an ObservableObject
             cache(object as! (any ObservedModel), model: model, instance: instance)
             return object
         }
@@ -287,9 +274,7 @@ public class ObservableDatabase: Database, ObservableObject {
     public func delete<Instance: ModelProtocol>(_ instance: Instance) {
         set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
         // Notify instance about deletion status
-        if let observed = instance as? (any ObservedModel) {
-            (observed.objectWillChange as? ObservableObjectPublisher)?.send()
-        }
+        (instance.objectWillChange as? ObservableObjectPublisher)?.send()
     }
 
     /**

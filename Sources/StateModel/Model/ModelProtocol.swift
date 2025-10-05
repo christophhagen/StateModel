@@ -3,7 +3,7 @@ import Foundation
 /**
  A type that can be represented by a key path structure
  */
-public protocol ModelProtocol: ModelInstance {
+public protocol ModelProtocol: ModelInstance, ObservableObject {
 
     /**
      The unique ID of this model class when used in a key path.
