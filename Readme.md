@@ -92,7 +92,7 @@ Integrate this package like you would any other:
 ```swift
 ...
     dependencies: [
-        .package(url: "https://github.com/christophhagen/StateModel", from: "5.0.0")
+        .package(url: "https://github.com/christophhagen/StateModel", from: "6.0.0")
     ],
 ...
     .target(
