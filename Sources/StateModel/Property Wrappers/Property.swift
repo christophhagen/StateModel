@@ -84,26 +84,6 @@ public struct Property<Value: DatabaseValue> {
     }
 
     /**
-     Create a new property with an explicit default value.
-     - Parameter default: The default value to use when the database contains no value for the property
-     - Parameter id: The unique id of the property for the model
-     */
-    public init(id: PropertyKey, default defaultValue: Value) {
-        self.id = id
-        self.defaultValue = defaultValue
-    }
-
-    /**
-     Create a new property with an explicit default value.
-     - Parameter default: The default value to use when the database contains no value for the property
-     - Parameter id: The unique id of the property for the model
-     */
-    public init<T: RawRepresentable>(id: T, default defaultValue: Value) where T.RawValue == PropertyKey {
-        self.id = id.rawValue
-        self.defaultValue = defaultValue
-    }
-
-    /**
      The value of the property.
 
      This subscript reads the property value using the database reference of the enclosing model.

@@ -143,19 +143,54 @@ let observedDatabase = ObservableDatabase(wrapping: database)
 The wrapper is then used in all places where you would normally use the underlying database, e.g. for fetching models.
 It will internally keep track of the currently used models (which conform to `ObservableObject`) and notify them whenever a property changes.
 
+### Model attributes
+
+Each property of the model that is backed by the database must be annotated with a property wrapper:
+- `@Property(id:)` for primitives or `Codable` types
+- `@Reference(id:)` for links to other models
+- `@ReferenceList(id:)` for 1:n and n:n relationships
+
+This wrapper transforms the property, so that the current values are always retrieved from the database.
+This is done by using the `database` property of the model (hidden in `@Model`) with the unique path of the property.
+This path is contructed from the `modelId`, the instance `id` (from `@Model`), and the `id` set for each property wrapper.
+
+The property id must be an integer literal.
+The `@Model` macro enforces unique ids for all properties, and generates a `PropertyId` enum on the type,
+to access all ids programmatically, if needed.
+
+It is still allowed to add computed properties or `let` declarations to models:
+
+```swift
+@Model(id: 1)
+class MyModel {
+
+    @Property(id: 1)
+    var a: Int
+
+    let myConstant = 42
+
+    var shifted: Int { a + myConstant }
+}
+```
+
 ### Properties
 
-Each property of the model that is backed by the database must be annotated with a property wrapper like `@Property`.
-This wrapper transforms the property, so that the current value is always retrieved from the database.
-This is done by using the `database` property of the model (hidden in `@Model`) with the unique path of the property.
-This path is contructed from the `modelId`, the instance `id` (from `@Model`), and the id set for `@Property`.
+The `@Property` wrapper is used to store any value that conforms to `Codable`:
 
-The value type in this case is `String`, but any Swift type that conforms to `Codable` can be used.
-It's also possible to provide a default value, which is used if the database does not contain a value for the property (the default value is not written to the database).
+```swift
+@Property(id: 42)
+var value: String = "Default"
+
+@Property(id: 43)
+var count: Int // Defaults to `0`
+```
+
+Every property requires a default value, which is used if the database does not contain a value for the property.
+If the type conforms to `Defaultable`, then the wrapper will use the global `default` value defined for the type (e.g. `Int` conforms to `Defaultable` with default `0`), or an explicit default value must be provided.
 
 ### References
 
-When you need to reference a single object of another model class, then `@Reference` is the way to go.
+When you need to reference a single object of another model class, then `@Reference` is the way to go:
 
 ```swift
 @Reference(id: 3)
@@ -173,7 +208,7 @@ There is also no possibility to specify cascading deletes.
 
 ### Reference Lists
 
-Use `@ReferenceList` to handle one-to-many relationships.
+Use `@ReferenceList` to handle one-to-many relationships:
 
 ```swift
 @ReferenceList(id: 1)
@@ -233,6 +268,19 @@ Use the database to create or get objects.
 let model: MyModel = database.create(id: 123)
 
 let other: MyModel? = database.get(id: 123)
+```
+
+There are also generated functions to set all properties of a model at once:
+
+```swift
+ @Model(id: 1)
+ final class MyModel {
+
+     @Property(id: 42)
+     var value: String
+ }
+
+let model = MyModel.create(in: database, id: 123, value: 42)
 ```
 
 You should not create models outside of the database.
@@ -327,6 +375,14 @@ print(newModel.value) // Prints "12"
 ```
 
 You should therefore be careful when reusing instance ids.
+If you want to ensure that reusing an id does not restore previous values, you can explicitly reset them when deleting an instance:
+
+```swift
+let instance: MyModel = ...
+instance.deleteAndClearProperties()
+```
+
+This function resets each property to the default value.
 
 ### Queries
 

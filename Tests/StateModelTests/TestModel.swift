@@ -17,23 +17,22 @@ typealias TestDatabase = InMemoryDatabase
 @Model(id: ModelId.testModel.rawValue)
 final class TestModel {
 
-    @Property(id: PropertyId.a)
+    @Property(id: 1)
     var a: Int
 
-    @Property(id: PropertyId.b, default: -1)
-    var b: Int
+    @Property(id: 2)
+    var b: Int = -1
 
-    @Reference(id: PropertyId.ref)
+    @Reference(id: 3)
     var ref: NestedModel?
 
-    @ReferenceList(id: PropertyId.list)
+    @ReferenceList(id: 4)
     var list: [NestedModel]
 
-    enum PropertyId: Int {
-        case a = 1
-        case b = 2
-        case ref = 3
-        case list = 4
+    let fixed = 1
+
+    var sum: Int {
+        a + b
     }
 }
 

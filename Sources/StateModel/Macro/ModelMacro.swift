@@ -47,7 +47,7 @@ import Combine
  ```
  */
 @attached(extension, conformances: ModelProtocol, ObservableObject)
-@attached(member, names: named(id), named(modelId), named(database), named(init(database:id:)), named(objectWillChange), named(PropertyId), named(create))
+@attached(member, names: named(id), named(modelId), named(database), named(init(database:id:)), named(objectWillChange), named(PropertyId), named(create), named(deleteAndClearProperties))
 public macro Model(id: Int) = #externalMacro(
     module: "StateModelMacros",
     type: "ModelMacro")
