@@ -25,7 +25,7 @@ struct PropertySpecification {
             ]
         }
         return [
-            "if \(name) != \(usableDefaultValue) {",
+            "if areNotEqual(\(name), \(usableDefaultValue)) {",
             "    \(instanceName).\(name) = \(name)",
             "}"
         ]
@@ -238,6 +238,8 @@ extension ModelMacro: MemberMacro {
          - Parameter id: The unique id of the instance
         */
         static func create(\(raw: allParams.joined(separator: ", "))) -> Self {
+            func areNotEqual<T>(_ a: T, _ b: T) -> Bool { false }
+            func areNotEqual<T: Equatable>(_ a: T, _ b: T) -> Bool { a != b }
             let instance: Self = database.create(id: id)
             \(raw: args)
             return instance

@@ -68,8 +68,14 @@ final class MacroExpansionTests: XCTestCase {
                  - Parameter id: The unique id of the instance
                 */
                 static func create(in database: Database, id: InstanceKey, some: Int = 1, nested: NestedModel) -> Self {
+                    func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
+                        false
+                    }
+                    func areNotEqual<T: Equatable>(_ a: T, _ b: T) -> Bool {
+                        a != b
+                    }
                     let instance: Self = database.create(id: id)
-                    if some != 1 {
+                    if areNotEqual(some, 1) {
                         instance.some = some
                     }
                     instance.nested = nested

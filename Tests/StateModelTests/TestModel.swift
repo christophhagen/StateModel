@@ -14,6 +14,13 @@ enum ModelId: Int, Comparable, Codable {
 
 typealias TestDatabase = InMemoryDatabase
 
+struct MyPrimitive: Codable, Defaultable {
+
+    var value: Int
+
+    static let `default` = MyPrimitive(value: 0)
+}
+
 @Model(id: ModelId.testModel.rawValue)
 final class TestModel {
 
@@ -28,6 +35,9 @@ final class TestModel {
 
     @ReferenceList(id: 4)
     var list: [NestedModel]
+
+    @Property(id: 5)
+    var c: MyPrimitive
 
     let fixed = 1
 
