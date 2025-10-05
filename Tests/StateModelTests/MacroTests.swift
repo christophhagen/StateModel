@@ -60,8 +60,10 @@ final class StateModelMacroTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                 */
-                static func create(in database: Database, id: InstanceKey) -> Self {
-                    database.create(id: id)
+                static func create(in database: Database, id: InstanceKey, some: Int) -> Self {
+                    let instance: Self = database.create(id: id)
+                    instance.some = some
+                    return instance
                 }
             }
 
