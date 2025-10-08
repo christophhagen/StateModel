@@ -30,6 +30,9 @@ final class TestModel {
     @Property(id: 2)
     var b: Int = -1
 
+    @Property(id: 7)
+    var d: Bool = false
+
     @Reference(id: 3)
     var ref: NestedModel?
 

@@ -24,10 +24,13 @@ final class MacroExpansionTests: XCTestCase {
             final class GenericModel {
 
                 @Property(id: 1)
-                var some: Int = 1
+                var some: Int = 1 // Trailing
             
                 @Reference(id: 2)
-                var nested: NestedModel!
+                var nested: NestedModel! /* Trailing */
+            
+                @ReferenceList(id: 3)
+                var list: [NestedModel] // Trailing
             }
             """,
             expandedSource:
@@ -35,10 +38,13 @@ final class MacroExpansionTests: XCTestCase {
             final class GenericModel {
 
                 @Property(id: 1)
-                var some: Int = 1
+                var some: Int = 1 // Trailing
             
                 @Reference(id: 2)
-                var nested: NestedModel!
+                var nested: NestedModel! /* Trailing */
+            
+                @ReferenceList(id: 3)
+                var list: [NestedModel] // Trailing
 
                 static let modelId: Int = 1
 
@@ -67,7 +73,7 @@ final class MacroExpansionTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                 */
-                static func create(in database: Database, id: InstanceKey, some: Int = 1, nested: NestedModel) -> Self {
+                static func create(in database: Database, id: InstanceKey, some: Int = 1, nested: NestedModel, list: [NestedModel] = .init()) -> Self {
                     func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
                         false
                     }
@@ -79,12 +85,16 @@ final class MacroExpansionTests: XCTestCase {
                         instance.some = some
                     }
                     instance.nested = nested
+                    if areNotEqual(list, .init()) {
+                        instance.list = list
+                    }
                     return instance
                 }
             
                 enum PropertyId: PropertyKey, CaseIterable {
                     case some = 1
                     case nested = 2
+                    case list = 3
                 }
             
                 /**
@@ -93,6 +103,7 @@ final class MacroExpansionTests: XCTestCase {
                 func deleteAndClearProperties() {
                     some = 1
                     nested = nil
+                    list = .init()
                     self.delete()
                 }
             }

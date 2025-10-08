@@ -7,6 +7,8 @@
 public protocol SequenceInitializable: Collection {
 
     init<S: Sequence>(_ sequence: S) where S.Element == Element
+
+    init()
 }
 
 extension Array: SequenceInitializable {}

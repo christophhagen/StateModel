@@ -1,70 +1,6 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
 
-struct PropertySpecification {
-    let id: Int
-    let name: String
-    let type: String
-    let defaultValue: String?
-
-    var functionParameterString: String {
-        "\(name): \(typeForParameter)\(defaultValueInitializer)"
-    }
-
-    func linesForSetter(instanceName: String) -> [String] {
-        guard let usableDefaultValue else {
-            // If there is no default value to compare to
-            // just set the value
-            return ["\(instanceName).\(name) = \(name)"]
-        }
-        if usableDefaultValue == "nil" {
-            return [
-                "if let \(name) {",
-                "    \(instanceName).\(name) = \(name)",
-                "}"
-            ]
-        }
-        return [
-            "if areNotEqual(\(name), \(usableDefaultValue)) {",
-            "    \(instanceName).\(name) = \(name)",
-            "}"
-        ]
-    }
-
-    var deletionSetter: String {
-        // Here we assume that any property that doesn't have a default value
-        // is an (implicitly unwrapped) optional, so we set it to nil
-        "\(name) = \(usableDefaultValue ?? "nil")"
-    }
-
-    private var typeForParameter: String {
-        guard type.hasSuffix("!") else {
-            return type
-        }
-        return String(type.dropLast("!".count))
-    }
-
-    private var usableDefaultValue: String? {
-        if let defaultValue {
-            return defaultValue
-        }
-        if type.hasSuffix("?") {
-            return "nil"
-        }
-        if type.hasSuffix("!") {
-            return nil
-        }
-        return "\(type).`default`"
-    }
-
-    private var defaultValueInitializer: String {
-        if let usableDefaultValue {
-            return " = \(usableDefaultValue)"
-        }
-        return ""
-    }
-}
-
 extension ModelMacro: MemberMacro {
 
     public static func expansion(
@@ -122,7 +58,7 @@ extension ModelMacro: MemberMacro {
     }
 
     private static func extractProperty(_ varDecl: VariableDeclSyntax) throws -> PropertySpecification? {
-        guard let rawId = try findId(variable: varDecl) else {
+        guard let (property, rawId) = try findId(variable: varDecl) else {
             return nil
         }
         for binding in varDecl.bindings {
@@ -134,18 +70,26 @@ extension ModelMacro: MemberMacro {
             guard let typeDecl = binding.typeAnnotation else {
                 throw StateModelError("Could not determine type of property \(name)")
             }
-            let type = typeDecl.type.description.trimmingCharacters(in: .whitespaces)
-            let defaultValue = binding.initializer?.value.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            let type = exprWithoutTrailingComments(typeDecl.type)
+            let defaultValue = extractDefaultValue(binding.initializer)
 
             guard let id = Int(rawId) else {
                 throw StateModelError("`id` of property \(name) is not an integer")
             }
-            return .init(id: id, name: name, type: type, defaultValue: defaultValue)
+            return .init(property: property, id: id, name: name, type: type, defaultValue: defaultValue)
         }
         throw StateModelError("Could not determine name and type of stored property with id '\(rawId)'")
     }
 
-    private static func findId(variable: VariableDeclSyntax) throws -> String? {
+    private static func extractDefaultValue(_ initializer: InitializerClauseSyntax?) -> String? {
+        guard let initializer else {
+            return nil
+        }
+        let expr = initializer.value
+        return exprWithoutTrailingComments(expr)
+    }
+
+    private static func findId(variable: VariableDeclSyntax) throws -> (type: WrapperType, id: String)? {
         let attributes = variable.attributes
 
         for attribute in attributes {
@@ -157,7 +101,7 @@ extension ModelMacro: MemberMacro {
             guard let name = attr.attributeName.as(IdentifierTypeSyntax.self)?.name.text else {
                 continue
             }
-            guard name == "Property" || name == "Reference" || name == "ReferenceList" else {
+            guard let type = WrapperType(rawValue: name) else {
                 continue
             }
             guard let arguments = attr.arguments?.as(LabeledExprListSyntax.self) else {
@@ -167,7 +111,8 @@ extension ModelMacro: MemberMacro {
                 guard arg.label?.text == "id" else {
                     continue
                 }
-                return arg.expression.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                let id = arg.expression.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                return (type, id)
             }
         }
         return nil
@@ -268,4 +213,28 @@ extension ModelMacro: MemberMacro {
         }
         """
     }
+}
+
+func exprWithoutTrailingComments(_ expr: ExprSyntax) -> String {
+    let filteredTrivia = expr.trailingTrivia.filter {
+        switch $0 {
+        case .lineComment, .blockComment: false
+        default: true
+        }
+    }
+
+    let cleanedToken = expr.with(\.trailingTrivia, Trivia(pieces: filteredTrivia))
+    return cleanedToken.description.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+func exprWithoutTrailingComments(_ expr: TypeSyntax) -> String {
+    // Filter out comment trivia
+    let filteredTrivia = expr.trailingTrivia.filter {
+        switch $0 {
+        case .lineComment, .blockComment: false
+        default: true
+        }
+    }
+    let cleanedToken = expr.with(\.trailingTrivia, Trivia(pieces: filteredTrivia))
+    return cleanedToken.description.trimmingCharacters(in: .whitespacesAndNewlines)
 }
