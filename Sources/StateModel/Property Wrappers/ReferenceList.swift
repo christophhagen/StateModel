@@ -2,14 +2,21 @@
 /**
  A property wrapper to track a list of referenced instances.
 
+ Use this wrapper for properties that contain a sequence of objects that are also models.
+
  ```swift
- class MyModel: Model<MyDatabase> {
-     static let modelId = 1
+ @Model(id: 1)
+ class MyModel {
 
      @ReferenceList(id: 1)
      var list: [Nested]
  }
  ```
+
+ The wrapper will link the sequence to the database, so that any changes to the sequence are persisted.
+
+`@ReferenceList` can be used with any sequence type that conforms to `SequenceInitializable`, like `Array` or `Set`.
+ Internally, the property will be stored as an ordered list of integer ids.
  */
 @propertyWrapper
 public struct ReferenceList<S: SequenceInitializable> where S.Element: ModelProtocol {

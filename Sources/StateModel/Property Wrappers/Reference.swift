@@ -2,14 +2,22 @@
 /**
  A wrapper to reference other model instances.
 
+ Use this wrapper for properties that are themselves models.
+
  ```swift
- class MyModel: Model<MyDatabase> {
-     static let modelId = 1
+ @Model(id: 1)
+ class MyModel {
 
      @Reference(id: 1)
      var ref: Nested?
  }
  ```
+
+ Each reference must be optional, so that `nil` can be used as the default value for new objects.
+ It is possible to use implicitly unwrapped optionals, if access to the property is guaranteed to happen only
+ when it was set to a value.
+ 
+ Internally, the property is stored using the unique `id` of the referenced model.
  */
 @propertyWrapper
 public struct Reference<Value> where Value: ModelProtocol {
