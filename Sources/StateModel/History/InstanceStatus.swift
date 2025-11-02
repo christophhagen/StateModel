@@ -11,6 +11,10 @@ public enum InstanceStatus: UInt8, DatabaseValue {
     case deleted = 2
 }
 
+extension InstanceStatus: Sendable {
+
+}
+
 extension InstanceStatus: CustomStringConvertible {
     
     public var description: String {

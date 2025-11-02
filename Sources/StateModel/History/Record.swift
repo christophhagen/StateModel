@@ -47,6 +47,10 @@ extension Record {
     public var data: Data { sample.data }
 }
 
+extension Record: Sendable {
+
+}
+
 extension Record: Encodable {
 
     public func encode(to encoder: any Encoder) throws {

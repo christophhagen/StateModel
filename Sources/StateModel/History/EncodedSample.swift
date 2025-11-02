@@ -25,6 +25,10 @@ public struct EncodedSample {
     }
 }
 
+extension EncodedSample: Sendable {
+    
+}
+
 extension EncodedSample: Encodable {
 
     public func encode(to encoder: any Encoder) throws {

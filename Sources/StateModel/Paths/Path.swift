@@ -61,6 +61,10 @@ public struct Path: Hashable {
     }
 }
 
+extension Path: Sendable {
+
+}
+
 extension Path: Comparable {
 
     public static func < (lhs: Self, rhs: Self) -> Bool {
