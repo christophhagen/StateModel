@@ -12,18 +12,19 @@ extension ModelMacro: MemberMacro {
         guard let classDeclaration = declaration.as(ClassDeclSyntax.self) else {
             throw StateModelError("Expected a class declaration for @Model")
         }
+        let accessModifier = determineAccessModifier(classDeclaration)
         let id = try extractModelId(from: classDeclaration.attributes)
         let properties = try extractProperties(from: classDeclaration)
         try ensureUniqueIds(properties: properties)
         return [
-            modelId(id: id),
-            databaseReference,
-            instanceId,
-            initializer,
-            objectWillChange,
-            createFunction(with: properties),
-            createPropertyEnum(with: properties),
-            createDeleteFunction(with: properties)
+            modelId(id: id, access: accessModifier),
+            databaseReference(access: accessModifier),
+            instanceId(access: accessModifier),
+            initializer(access: accessModifier),
+            objectWillChange(access: accessModifier),
+            createFunction(with: properties, access: accessModifier),
+            createPropertyEnum(with: properties, access: accessModifier),
+            createDeleteFunction(with: properties, access: accessModifier)
         ]
     }
 
@@ -130,47 +131,55 @@ extension ModelMacro: MemberMacro {
         }
     }
 
-    private static func modelId(id: ExprSyntax) -> DeclSyntax {
+    private static func modelId(id: ExprSyntax, access: String) -> DeclSyntax {
         """
-        static let modelId: Int = \(id)
+        /**
+         The unique id of this model in the database.
+         */
+        \(raw: access)static let modelId: Int = \(id)
         """
     }
 
-    private static var databaseReference: DeclSyntax {
+    private static func databaseReference(access: String) -> DeclSyntax {
         """
         /// The reference to the database to which this object is linked
-        public unowned let database: Database
+        \(raw: access)unowned let database: Database
         """
     }
 
-    private static var instanceId: DeclSyntax {
+    private static func instanceId(access: String) -> DeclSyntax {
         """
         /// The unique id of the instance
-        public let id: InstanceKey
+        \(raw: access)let id: InstanceKey
         """
     }
 
-    private static var initializer: DeclSyntax {
+    private static func initializer(access: String) -> DeclSyntax {
         """
         /**
          Create a model.
          - Parameter database: The reference to the model database to read and write property values
          - Parameter id: The unique id of the instance
          - Note: This initializer should never be used directly. Create object through the database functions
-        */
+         */
         @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-        public required init(database: Database, id: InstanceKey) {
+        \(raw: access)required init(database: Database, id: InstanceKey) {
             self.database = database
             self.id = id
         }
         """
     }
 
-    private static var objectWillChange: DeclSyntax {
-        "public let objectWillChange = ObservableObjectPublisher()"
+    private static func objectWillChange(access: String) -> DeclSyntax {
+        """
+        /**
+         The publisher to notify the object that the underlying data has changed.
+         */
+        \(raw: access)let objectWillChange = ObservableObjectPublisher()
+        """
     }
 
-    private static func createFunction(with properties: [PropertySpecification]) -> DeclSyntax {
+    private static func createFunction(with properties: [PropertySpecification], access: String) -> DeclSyntax {
         let params = properties.map { $0.functionParameterString }
         let args: String = properties.map { $0.linesForSetter(instanceName: "instance") }
             .joined()
@@ -181,8 +190,8 @@ extension ModelMacro: MemberMacro {
          Create a new instance of the model.
          - Parameter database: The database in which the instance is created.
          - Parameter id: The unique id of the instance
-        */
-        static func create(\(raw: allParams.joined(separator: ", "))) -> Self {
+         */
+        \(raw: access)static func create(\(raw: allParams.joined(separator: ", "))) -> Self {
             func areNotEqual<T>(_ a: T, _ b: T) -> Bool { false }
             func areNotEqual<T: Equatable>(_ a: T, _ b: T) -> Bool { a != b }
             let instance: Self = database.create(id: id)
@@ -192,22 +201,25 @@ extension ModelMacro: MemberMacro {
         """
     }
 
-    private static func createPropertyEnum(with properties: [PropertySpecification]) -> DeclSyntax {
+    private static func createPropertyEnum(with properties: [PropertySpecification], access: String) -> DeclSyntax {
         let cases = properties.map { "    case \($0.name) = \($0.id)" }
         return """
-        enum PropertyId: PropertyKey, CaseIterable {
+        /**
+         All properties tracked by the model.
+         */
+        \(raw: access)enum PropertyId: PropertyKey, CaseIterable {
         \(raw: cases.joined(separator: "\n"))
         }
         """
     }
 
-    private static func createDeleteFunction(with properties: [PropertySpecification]) -> DeclSyntax {
+    private static func createDeleteFunction(with properties: [PropertySpecification], access: String) -> DeclSyntax {
         let setters = properties.map { $0.deletionSetter }.joined(separator: "    \n")
         return """
         /**
          Delete the instance and reset overwrite all properties with default values
-        */
-        func deleteAndClearProperties() {
+         */
+        \(raw: access)func deleteAndClearProperties() {
             \(raw: setters)
             self.delete()
         }
@@ -237,4 +249,24 @@ func exprWithoutTrailingComments(_ expr: TypeSyntax) -> String {
     }
     let cleanedToken = expr.with(\.trailingTrivia, Trivia(pieces: filteredTrivia))
     return cleanedToken.description.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+func determineAccessModifier(_ classDecl: ClassDeclSyntax) -> String {
+    // Extract access modifier (if any)
+    let accessModifier = classDecl.modifiers.first(where: { modifier in
+        switch modifier.name.tokenKind {
+        case .keyword(.public), .keyword(.internal), .keyword(.private), .keyword(.fileprivate), .keyword(.open):
+            return true
+        default:
+            return false
+        }
+    })
+
+    guard let modifier = accessModifier?.name.text else {
+        return ""
+    }
+    if modifier == "private" {
+        return "fileprivate "
+    }
+    return modifier + " "
 }

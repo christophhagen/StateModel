@@ -46,33 +46,39 @@ final class MacroExpansionTests: XCTestCase {
                 @ReferenceList(id: 3)
                 var list: [NestedModel] // Trailing
 
+                /**
+                 The unique id of this model in the database.
+                 */
                 static let modelId: Int = 1
 
                 /// The reference to the database to which this object is linked
-                public unowned let database: Database
+                unowned let database: Database
 
                 /// The unique id of the instance
-                public let id: InstanceKey
+                let id: InstanceKey
 
                 /**
                  Create a model.
                  - Parameter database: The reference to the model database to read and write property values
                  - Parameter id: The unique id of the instance
                  - Note: This initializer should never be used directly. Create object through the database functions
-                */
+                 */
                 @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-                public required init(database: Database, id: InstanceKey) {
+                required init(database: Database, id: InstanceKey) {
                     self.database = database
                     self.id = id
                 }
             
-                public let objectWillChange = ObservableObjectPublisher()
+                /**
+                 The publisher to notify the object that the underlying data has changed.
+                 */
+                let objectWillChange = ObservableObjectPublisher()
             
                 /**
                  Create a new instance of the model.
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
-                */
+                 */
                 static func create(in database: Database, id: InstanceKey, some: Int = 1, nested: NestedModel, list: [NestedModel] = .init()) -> Self {
                     func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
                         false
@@ -91,6 +97,9 @@ final class MacroExpansionTests: XCTestCase {
                     return instance
                 }
             
+                /**
+                 All properties tracked by the model.
+                 */
                 enum PropertyId: PropertyKey, CaseIterable {
                     case some = 1
                     case nested = 2
@@ -99,7 +108,7 @@ final class MacroExpansionTests: XCTestCase {
             
                 /**
                  Delete the instance and reset overwrite all properties with default values
-                */
+                 */
                 func deleteAndClearProperties() {
                     some = 1
                     nested = nil
