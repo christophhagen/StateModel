@@ -1,7 +1,7 @@
 
 struct PropertySpecification {
     let property: WrapperType
-    let id: Int
+    let id: PropertyKey
     let name: String
     let type: String
     let defaultValue: String?

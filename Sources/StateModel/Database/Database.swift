@@ -40,7 +40,7 @@ public protocol Database: AnyObject {
      - Parameter status: The instance status of the path.
      - Returns: The list of all search results that were returned by the `predicate`
      */
-    func all<T>(model: ModelKey, where predicate: (_ instance: Int, _ status: InstanceStatus) -> T?) -> [T]
+    func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T]
 
     // MARK: Default implementations
 

@@ -37,7 +37,7 @@ public final class EditingContext: Database {
         var handledIds: Set<InstanceKey> = []
         let existing: [T] = database.all(model: model) { instance, status in
             handledIds.insert(instance)
-            let path = Path(model: model, instance: instance, property: PropertyKey.instanceId)
+            let path = Path(model: model, instance: instance)
             if let edited: InstanceStatus = getFromCache(path) {
                 return predicate(instance, edited)
             }

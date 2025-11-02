@@ -35,6 +35,11 @@ extension ModelProtocol {
         }
     }
 
+    @inline(__always)
+    static func statusPath(for instance: InstanceKey) -> Path {
+        .init(model: modelId, instance: instance)
+    }
+
     /**
      Retrieve the current status of the instance from the database.
      */

@@ -529,7 +529,7 @@ final class MinimalDatabase: Database {
 
     // MARK: Instances
 
-    func all<T>(model: Int, where predicate: (_ instanceId: Int, _ value: InstanceStatus) -> T?) -> [T] {
+    func all<T>(model: ModelKey, where predicate: (_ instanceId: InstanceKey, _ value: InstanceStatus) -> T?) -> [T] {
         cache.compactMap { (path, value) -> T? in
             guard path.model == model,
                   path.property == PropertyKey.instanceId,
@@ -554,7 +554,7 @@ If you want to track the history of each property, so that you can revert change
 Each `@Model` requires a unique id, which you might want to collect in an enum:
 
 ```swift
-enum ModelId: Int {
+enum ModelId: ModelKey {
     case item = 1
     case message = 2
     case reminder = 3
@@ -570,35 +570,8 @@ class Item {
 }
 ```
 
-### Property Id Enum
-
-Similar to the model ids, it may be beneficial to create an `enum` to track the property ids for each class:
-
-```swift
-@Model(id: 1)
-final class MyModel {
-    
-    enum PropertyId: Int {
-        case value = 1
-        case otherValue = 2
-    }
-    
-    @Property(id: PropertyId.value.rawValue)
-    var value: String
-    
-    @Property(id: PropertyId.otherValue.rawValue)
-    var otherValue: Double
-}
-```
-
-This may remind you a bit of the `CodingKey` enums in `Codable` conformances,
-except that it's currently not possible to automatically assign ids.
-
-
 ## Roadmap
 
 The following features are currently planned:
 
 - More sophisticated database synchronization
-- Generate a `PropertyId` enum for each model, to detect id collisions
-- Resetting of all properties on deletion

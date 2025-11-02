@@ -12,13 +12,13 @@
 public struct Path: Hashable {
 
     /// The unique identifier of the model type
-    public let model: Int
+    public let model: ModelKey
 
     /// The unique identifier of the instance
-    public let instance: Int
+    public let instance: InstanceKey
 
     /// The unique identifier of the property
-    public let property: Int
+    public let property: PropertyKey
 
     /**
      Create a new path.
@@ -27,10 +27,23 @@ public struct Path: Hashable {
      - Parameter instance: The unique identifier of the instance
      - Parameter property: The unique identifier of the property
      */
-    public init(model: Int, instance: Int, property: Int) {
+    public init(model: ModelKey, instance: InstanceKey, property: PropertyKey) {
         self.model = model
         self.instance = instance
         self.property = property
+    }
+
+    /**
+     Create a new path.
+     - Note: Paths are usually not created directly, but automatically constructed by property wrappers like `@Property`.
+     - Parameter model: The unique identifier of the model type
+     - Parameter instance: The unique identifier of the instance
+     - Parameter property: The unique identifier of the property
+     */
+    public init<T: RawRepresentable>(model: ModelKey, instance: InstanceKey, property: T) where T.RawValue == PropertyKey {
+        self.model = model
+        self.instance = instance
+        self.property = property.rawValue
     }
 
     /**
@@ -41,7 +54,7 @@ public struct Path: Hashable {
      - Parameter model: The unique identifier of the model type
      - Parameter instance: The unique identifier of the instance
      */
-    init(model: Int, instance: Int) {
+    init(model: ModelKey, instance: InstanceKey) {
         self.model = model
         self.instance = instance
         self.property = Int.instanceId

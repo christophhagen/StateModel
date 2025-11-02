@@ -50,7 +50,7 @@ public final class HistoryEditingContext: Database {
         var handledIds: Set<InstanceKey> = []
         let existing: [T] = database.all(model: model, at: contextStartDate) { instance, status, timestamp in
             handledIds.insert(instance)
-            let path = Path(model: model, instance: instance, property: PropertyKey.instanceId)
+            let path = Path(model: model, instance: instance)
             guard let edited: (value: InstanceStatus, date: Date) = getFromCache(path),
                   edited.date >= timestamp else {
                 return predicate(instance, status)

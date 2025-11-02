@@ -1,7 +1,7 @@
 import Foundation
 import StateModel
 
-enum ModelId: Int, Comparable, Codable {
+enum ModelId: ModelKey, Comparable, Codable {
 
     static func < (lhs: ModelId, rhs: ModelId) -> Bool {
         lhs.rawValue < rhs.rawValue

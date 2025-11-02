@@ -49,7 +49,7 @@ final class MacroExpansionTests: XCTestCase {
                 /**
                  The unique id of this model in the database.
                  */
-                static let modelId: Int = 1
+                static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
                 unowned let database: Database

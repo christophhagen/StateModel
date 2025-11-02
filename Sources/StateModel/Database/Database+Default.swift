@@ -14,7 +14,7 @@ extension Database {
      - Returns: A new model instance of the specified type with the given id.
      */
     public func create<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance {
-        set(InstanceStatus.created, model: Instance.modelId, instance: id, property: PropertyKey.instanceId)
+        set(InstanceStatus.created, for: Instance.statusPath(for: id))
         return .init(database: self, id: id)
     }
 
@@ -24,7 +24,7 @@ extension Database {
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
     public func get<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
-        guard get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId, of: InstanceStatus.self) != nil else {
+        guard get(Instance.statusPath(for: id), of: InstanceStatus.self) != nil else {
             return nil
         }
         return .init(database: self, id: id)
@@ -46,7 +46,7 @@ extension Database {
      - Returns: The existing, non-deleted instance, or `nil`
      */
     public func active<Instance: ModelProtocol>(id: InstanceKey, of type: Instance.Type) -> Instance? {
-        guard let status: InstanceStatus = get(model: Instance.modelId, instance: id, property: PropertyKey.instanceId), status == .created else {
+        guard let status: InstanceStatus = get(Instance.statusPath(for: id)), status == .created else {
             return nil
         }
         return .init(database: self, id: id)
@@ -57,7 +57,7 @@ extension Database {
      - Parameter instance: The instance to delete
      */
     public func delete<Instance: ModelProtocol>(_ instance: Instance) {
-        set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
+        set(InstanceStatus.deleted, for: Instance.statusPath(for: instance.id))
     }
 
     /**

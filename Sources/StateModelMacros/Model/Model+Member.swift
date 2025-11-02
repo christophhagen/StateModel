@@ -74,7 +74,7 @@ extension ModelMacro: MemberMacro {
             let type = exprWithoutTrailingComments(typeDecl.type)
             let defaultValue = extractDefaultValue(binding.initializer)
 
-            guard let id = Int(rawId) else {
+            guard let id = ModelKey(rawId) else {
                 throw StateModelError("`id` of property \(name) is not an integer")
             }
             return .init(property: property, id: id, name: name, type: type, defaultValue: defaultValue)
@@ -120,7 +120,7 @@ extension ModelMacro: MemberMacro {
     }
 
     private static func ensureUniqueIds(properties: [PropertySpecification]) throws {
-        var usedIds: Set<Int> = []
+        var usedIds: Set<ModelKey> = []
         for property in properties {
             let id = property.id
             if usedIds.contains(id) {
@@ -136,7 +136,7 @@ extension ModelMacro: MemberMacro {
         /**
          The unique id of this model in the database.
          */
-        \(raw: access)static let modelId: Int = \(id)
+        \(raw: access)static let modelId: ModelKey = \(id)
         """
     }
 

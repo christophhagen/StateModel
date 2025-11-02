@@ -58,7 +58,7 @@ final class AccessModifierTests: XCTestCase {
                 /**
                  The unique id of this model in the database.
                  */
-                public static let modelId: Int = 1
+                public static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
                 public unowned let database: Database
@@ -152,7 +152,7 @@ final class AccessModifierTests: XCTestCase {
                 /**
                  The unique id of this model in the database.
                  */
-                fileprivate static let modelId: Int = 1
+                fileprivate static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
                 fileprivate unowned let database: Database
