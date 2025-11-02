@@ -241,7 +241,7 @@ You can also use `InMemoryHistoryDatabase` for a full edit history.
 
 An implementation of a database with an underlying SQLite store is provided in [SQLiteStateDB](https://github.com/christophhagen/SQLiteStateDB).
 It stores SQLite supported types (integers, doubles, strings) in separate tables, and encodes all other `Codable` values using a provided encoder.
-It also provides caching of last used properties in memory.
+It also provides caching of last used properties in memory, includes a history, and even has synchronization mechanism.
 
 #### Custom implementation
 
@@ -495,11 +495,43 @@ Changes made to the database will then not appear in the context.
 
 ### Synchronization
 
-It's possible to synchronize databases with each other quite easily when you supply your own database solution:
-In the `set()` function of the database, copy the encoded value into a record structure that stores the value, path and an optional timestamp.
-Transmit the records to the database to be synchronized, and apply the updates again.
+In general, synchronizing databases with `StateModel` is easy, since updates to the database can be tracked while going through the setter function of the database interface.
+The only thing to do here is to store these updates in an appropriate data structure (which depends on the database implementation), and then apply those updates to the database to synchronize.
+
+Some provided implementations, like the [SQLite database](https://github.com/christophhagen/SQLiteStateDB) or the `InMemoryDatabase`already provide a mechanism.
+
+### Custom implementation
+
+The concrete implementation of the synchronization mechanism depends on how the data is stored in the database, so it must be implemented separately for each storage solution.
+However, the main steps will likely be similar:
+- Track changes to the database in the `set()` function.
+- Convert each change into a record
+- (Optional) Encode the record for transmission to the second database
+- (Optional) Decode the record
+- Insert the changed data into the second database
+- (Optional) Trigger updates to the observable database to refresh the UI
 
 To understand more about the mechanism, see the provided `InMemoryDatabase`, or check out the [SQLite database implementation](https://github.com/christophhagen/SQLiteStateDB).
+
+In addition to the update process, the synchronization process must track the exchange of the updates to prevent duplicates or missing entries, and conflicts must be resolved.
+
+Another consideration is the encoding and decoding of the changes.
+While it is possible to just encode each changed value as binary data due to the `Codable` conformance,
+the type information will be lost, and it is not trivial to apply the update.
+
+The SQLite implementation solves this by encoding each update using an enum with associated types, which matches the available SQLite tables in which the values will be stored:
+
+```swift
+public enum SynchronizationValue {
+    case integer(Int64?)
+    case double(Double?)
+    case string(String?)
+    case data(Data?)
+    case instance(InstanceStatus)
+}
+```
+
+Something similar may be applicable to other storage solutions, but there are also other possible ways to preserve the type information.
 
 ### Migration
 
@@ -568,9 +600,3 @@ class Item {
 
 }
 ```
-
-## Roadmap
-
-The following features are currently planned:
-
-- More sophisticated database synchronization
