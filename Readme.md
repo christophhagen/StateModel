@@ -496,11 +496,10 @@ Changes made to the database will then not appear in the context.
 ### Synchronization
 
 It's possible to synchronize databases with each other quite easily when you supply your own database solution:
-In the `set()` function of the database, copy the encoded value into a `Record`, which will provide a timestamp for the change.
-Transmit the records to the database to be synchronized, and apply the updates again,
-while checking for newer records.
+In the `set()` function of the database, copy the encoded value into a record structure that stores the value, path and an optional timestamp.
+Transmit the records to the database to be synchronized, and apply the updates again.
 
-The provided `InMemoryDatabase` offers a very basic form of synchronization for inspiration.
+To understand more about the mechanism, see the provided `InMemoryDatabase`, or check out the [SQLite database implementation](https://github.com/christophhagen/SQLiteStateDB).
 
 ### Migration
 

@@ -51,9 +51,9 @@ extension EncodedSample: CustomStringConvertible {
 
     public var description: String {
         if #available(macOS 12, iOS 15.0, watchOS 8.0, tvOS 15.0, *) {
-            return "[\(timestamp.formatted())]: \(data)"
+            return "[\(timestamp.formatted())] \(data)"
         }
-        return "[\(timestamp)]: \(data)"
+        return "[\(timestamp)] \(data)"
     }
 }
 
