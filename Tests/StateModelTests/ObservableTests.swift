@@ -60,6 +60,26 @@ struct ObservableTests {
         }
     }
 
+    @Test("Trigger an update manually")
+    func manuallyTriggerUpdate() async throws {
+        let baseDatabase = ObservableTestDatabase()
+        let database = ObservableDatabase(wrapping: baseDatabase)
+
+        let object: ObservableTestModel = database.create(id: 123)
+        object.a = 42
+        #expect(object.a == 42)
+
+        await observeChange(to: object) {
+            let path = Path(
+                model: ObservableTestModel.modelId,
+                instance: object.id,
+                property: ObservableTestModel.PropertyId.a)
+            baseDatabase.set(43, for: path)
+            database.updateChangedObject(model: ObservableTestModel.modelId, instance: object.id)
+        }
+        #expect(object.a == 43)
+    }
+
     @Test("Observe reference element")
     func observeReferenceElement() async throws {
         let baseDatabase = ObservableTestDatabase()

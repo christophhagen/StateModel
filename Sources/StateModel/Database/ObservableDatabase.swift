@@ -96,7 +96,24 @@ public class ObservableDatabase: Database, ObservableObject {
         return object
     }
 
-    private func notifyChangedObjects(model: ModelKey, instance: InstanceKey) {
+    /**
+     Notify an instance that the underlying data has changed.
+
+     The single object matching the model and instance id will be informed about changes via `objectWillChange`.
+     All queries that include the instance will also be notified.
+
+     This function is internally by `ObservableDatabase` to notify instances about changes to the data.
+     It can also be called manually if changes to the database are made without using the standard mechanisms,
+     e.g. when injecting synchronization data.
+     - Parameter model: The id of the model class that was updated.
+     - Parameter instance: The id of the updated instance.
+     */
+    public func updateChangedObject(model: ModelKey, instance: InstanceKey) {
+        notifyChangedObject(model: model, instance: instance)
+        notifyChangedQueries(model: model, instance: instance)
+    }
+
+    private func notifyChangedObject(model: ModelKey, instance: InstanceKey) {
         let id = ObjectKey(model: model, instance: instance)
         guard let box = storage[id] else {
             return
@@ -194,8 +211,7 @@ public class ObservableDatabase: Database, ObservableObject {
 
     public func set<Value: DatabaseValue>(_ value: Value, for path: KeyPath) {
         wrapped.set(value, for: path)
-        notifyChangedObjects(model: path.model, instance: path.instance)
-        notifyChangedQueries(model: path.model, instance: path.instance)
+        updateChangedObject(model: path.model, instance: path.instance)
     }
 
     public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus) -> T?) -> [T] {
