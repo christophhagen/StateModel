@@ -35,6 +35,7 @@ extension Database {
      - Note: This function also returns instances that have previously been deleted.
      Check the `status` property on the model, or alternatively use ``active(id:)`` to only query for non-deleted instances.
      */
+    @inline(__always)
     public func get<Instance: ModelProtocol>(id: InstanceKey) -> Instance? {
         get(id: id, of: Instance.self)
     }
@@ -56,6 +57,7 @@ extension Database {
      Delete a specific instance.
      - Parameter instance: The instance to delete
      */
+    @inline(__always)
     public func delete<Instance: ModelProtocol>(_ instance: Instance) {
         set(InstanceStatus.deleted, for: Instance.statusPath(for: instance.id))
     }
@@ -137,6 +139,7 @@ extension Database {
      - Parameter instance: The unique identifier of the instance
      - Parameter property: The unique identifier of the property
      */
+    @inline(__always)
     public func set<Value: DatabaseValue>(_ value: Value, model: ModelKey, instance: InstanceKey, property: PropertyKey, of type: Value.Type = Value.self) {
         set(value, for: .init(model: model, instance: instance, property: property))
     }
@@ -149,6 +152,7 @@ extension Database {
 
      This function is useful when the type of `value` may be incorrectly inferred from the context.
      */
+    @inline(__always)
     public func set<Value: DatabaseValue>(_ value: Value, for path: Path, of type: Value.Type) {
         set(value, for: path)
     }
@@ -170,6 +174,7 @@ extension Database {
      - Parameter predicate: The filter function to apply.
      - Returns: The instances in the database that match the predicate
      */
+    @inline(__always)
     public func all<Instance: ModelProtocol>(_ model: Instance.Type, where predicate: (Instance) -> Bool) -> [Instance] {
         all(where: predicate)
     }
@@ -183,6 +188,7 @@ extension Database {
      - Parameter id: The instance id
      - Returns: A new model instance of the specified type with the given id.
      */
+    @inline(__always)
     public func create<Instance: ModelProtocol>(id: InstanceKey) -> Instance {
         create(id: id, of: Instance.self)
     }
