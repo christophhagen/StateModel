@@ -47,6 +47,10 @@ final class TestModel {
     var sum: Int {
         a + b
     }
+
+    func t() {
+        _ = list
+    }
 }
 
 @Model(id: ModelId.otherModel.rawValue)

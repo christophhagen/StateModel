@@ -110,11 +110,21 @@ final class AccessModifierTests: XCTestCase {
                 }
             
                 /**
-                 Delete the instance and reset overwrite all properties with default values
+                 Delete the instance and set all properties with default values
                  */
                 public func deleteAndClearProperties() {
                     some = 1
                     self.delete()
+                }
+            
+                public func accessAllPropertiesForUpdateCalculation() {
+                    _ = some
+                    _ = status
+                }
+            
+                public func apply(update: InstanceUpdateExecutor) throws {
+                    try update.update(PropertyId.some, of: Int.self)
+                    try update.updateStatus()
                 }
             }
 
@@ -204,11 +214,21 @@ final class AccessModifierTests: XCTestCase {
                 }
             
                 /**
-                 Delete the instance and reset overwrite all properties with default values
+                 Delete the instance and set all properties with default values
                  */
                 fileprivate func deleteAndClearProperties() {
                     some = 1
                     self.delete()
+                }
+            
+                fileprivate func accessAllPropertiesForUpdateCalculation() {
+                    _ = some
+                    _ = status
+                }
+            
+                fileprivate func apply(update: InstanceUpdateExecutor) throws {
+                    try update.update(PropertyId.some, of: Int.self)
+                    try update.updateStatus()
                 }
             }
 
