@@ -9,3 +9,14 @@
  The size of the instance key is important because every value of a property stored in the database will contain an instance key value alongside it.
  */
 public typealias InstanceKey = Int
+
+
+public extension InstanceKey {
+
+    /**
+     Create a random instance id over the full range.
+     */
+    static func random() -> Self {
+        .random(in: Self.min...Self.max)
+    }
+}
