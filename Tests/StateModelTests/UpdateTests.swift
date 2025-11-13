@@ -14,10 +14,6 @@ final class SomeUpdatable {
     }
 }
 
-extension JSONDecoder: GenericDecoder { }
-
-extension JSONEncoder: GenericEncoder { }
-
 private func mapModel(modelId: Int) -> (any ModelProtocol.Type)? {
     switch modelId {
     case 123: return SomeUpdatable.self
