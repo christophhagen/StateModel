@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import SwiftUI
 
 public enum QuerySortOrder {
@@ -76,3 +77,4 @@ public struct Query<Result: ModelProtocol>: @MainActor DynamicProperty {
         observer.update(descriptor: descriptor)
     }
 }
+#endif

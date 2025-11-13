@@ -29,6 +29,26 @@ extension Array {
             return
         }
 
-        self.move(fromOffsets: IndexSet(integer: index), toOffset: newIndex > index ? newIndex + 1 : newIndex)
+        // No more bounds checks needed here
+        let target = newIndex > index ? newIndex + 1 : newIndex
+        moveUnchecked(at: index, to: target)
+    }
+
+    mutating func moveElement(at offset: Int, to target: Int) {
+        // Validate indices
+        guard offset >= 0, offset < count, target >= 0, target <= count, offset != target else { return }
+        moveUnchecked(at: offset, to: target)
+    }
+
+    private mutating func moveUnchecked(at offset: Int, to target: Int) {
+        // If moving forward in the array, removing first shifts subsequent indices left by 1,
+        // so we insert at `target - 1`. If moving backward, indices before `offset` are unaffected.
+        if offset < target {
+            let element = self.remove(at: offset)
+            self.insert(element, at: target - 1)
+        } else {
+            let element = self.remove(at: offset)
+            self.insert(element, at: target)
+        }
     }
 }

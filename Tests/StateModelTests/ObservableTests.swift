@@ -1,7 +1,11 @@
 import Foundation
 import Testing
 @testable import StateModel
+#if canImport(Combine)
 import Combine
+#else
+import OpenCombine
+#endif
 
 private typealias ObservableTestDatabase = InMemoryDatabase
 
@@ -120,6 +124,7 @@ struct ObservableTests {
         }
     }
 
+#if canImport(SwiftUI)
     @Test("Test query filtering")
     func testFilterOfQueryResults() async throws {
         let baseDatabase = ObservableTestDatabase()
@@ -176,6 +181,7 @@ struct ObservableTests {
         #expect(all.count == 3)
         #expect(all.map { $0.a } == [10, 20, 30])
     }
+#endif
 }
 
 public func observeChange<O: ObservableObject>(

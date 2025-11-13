@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 
 public struct QueryDescriptor<Result: ModelProtocol> {
 
@@ -50,3 +51,5 @@ extension QueryDescriptor: Equatable {
         lhs.id == rhs.id
     }
 }
+
+#endif

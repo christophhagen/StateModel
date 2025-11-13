@@ -1,3 +1,4 @@
+#if canImport(SwiftUI)
 import Foundation
 
 
@@ -9,3 +10,4 @@ public class QueryObserver: ObservableObject {
         fatalError()
     }
 }
+#endif

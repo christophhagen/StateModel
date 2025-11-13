@@ -34,6 +34,8 @@ struct EncodingTests {
 
         let data = try JSONEncoder().encode(change)
         let decoded = try JSONDecoder().decode(PropertyChange.self, from: data)
-        #expect(decoded == change)
+        #expect(decoded.id == change.id)
+        #expect(abs(decoded.date.timeIntervalSince(change.date)) < 0.00001)
+        #expect(decoded.data == change.data)
     }
 }

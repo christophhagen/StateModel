@@ -1,4 +1,8 @@
+#if canImport(Combine)
 import Combine
+#else
+import OpenCombine
+#endif
 
 /**
  Use the `Model` macro to define models to store in a database.

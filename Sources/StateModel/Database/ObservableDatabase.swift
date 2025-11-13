@@ -1,5 +1,9 @@
 import Foundation
+#if canImport(Combine)
 import Combine
+#else
+import OpenCombine
+#endif
 
 /**
  A database wrapper to enable the use of observable models.
@@ -110,7 +114,9 @@ public class ObservableDatabase: Database, ObservableObject {
      */
     public func updateChangedObject(model: ModelKey, instance: InstanceKey) {
         notifyChangedObject(model: model, instance: instance)
+#if canImport(SwiftUI)
         notifyChangedQueries(model: model, instance: instance)
+#endif
     }
 
     private func notifyChangedObject(model: ModelKey, instance: InstanceKey) {
@@ -134,6 +140,7 @@ public class ObservableDatabase: Database, ObservableObject {
 
     // MARK: Query caching and notification
 
+#if canImport(SwiftUI)
     private struct Observer {
 
         weak var observer: QueryObserver?
@@ -202,6 +209,7 @@ public class ObservableDatabase: Database, ObservableObject {
         }
         cachedQueries[model] = queries.filter { $0.value != nil }
     }
+#endif
 
     // MARK: Database
 
