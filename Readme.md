@@ -2,7 +2,7 @@
 
 Sometimes you want to create a small data model, without worrying about database schemas, migrations, model contexts and other details.
 In those cases `StateModel` may be a good choice.
-It allows you to define relational models very similar to SwiftData, but with less management overhead, faster integration, and even advanced features like database synchronization.
+It allows you to define relational models very similar to SwiftData, but with less management overhead, faster integration, and even advanced features like database synchronization and remote commands.
 
 ```swift
 import StateModel
@@ -32,6 +32,8 @@ Then use your models like any other classes, while the model logic takes care of
 - Editing contexts
 - Edit history storage and access
 - Database synchronization
+- Remote commands
+- Update requests
 
 > Check out the [example app](https://github.com/christophhagen/StateModelExample) for a demonstration.
 
@@ -60,6 +62,7 @@ Then use your models like any other classes, while the model logic takes care of
    * [History view](#history-view)
    * [Editing contexts](#editing-contexts)
    * [Synchronization](#synchronization)
+   * [Instance Commands](#instance-commands)
    * [Migration](#migration)
    * [Custom database implementation](#custom-database-implementation)
  * [Tips and Tricks](#tips-and-tricks)
@@ -495,43 +498,70 @@ Changes made to the database will then not appear in the context.
 
 ### Synchronization
 
-In general, synchronizing databases with `StateModel` is easy, since updates to the database can be tracked while going through the setter function of the database interface.
-The only thing to do here is to store these updates in an appropriate data structure (which depends on the database implementation), and then apply those updates to the database to synchronize.
-
-Some provided implementations, like the [SQLite database](https://github.com/christophhagen/SQLiteStateDB) or the `InMemoryDatabase`already provide a mechanism.
-
-### Custom implementation
-
-The concrete implementation of the synchronization mechanism depends on how the data is stored in the database, so it must be implemented separately for each storage solution.
-However, the main steps will likely be similar:
-- Track changes to the database in the `set()` function.
-- Convert each change into a record
-- (Optional) Encode the record for transmission to the second database
-- (Optional) Decode the record
-- Insert the changed data into the second database
-- (Optional) Trigger updates to the observable database to refresh the UI
-
-To understand more about the mechanism, see the provided `InMemoryDatabase`, or check out the [SQLite database implementation](https://github.com/christophhagen/SQLiteStateDB).
-
-In addition to the update process, the synchronization process must track the exchange of the updates to prevent duplicates or missing entries, and conflicts must be resolved.
-
-Another consideration is the encoding and decoding of the changes.
-While it is possible to just encode each changed value as binary data due to the `Codable` conformance,
-the type information will be lost, and it is not trivial to apply the update.
-
-The SQLite implementation solves this by encoding each update using an enum with associated types, which matches the available SQLite tables in which the values will be stored:
+There are use cases where information is stored in a central database, and one or more clients need to retrieve information from it.
+The library provides a `StateClient` that can be used to extract the necessary information from the database:
 
 ```swift
-public enum SynchronizationValue {
-    case integer(Int64?)
-    case double(Double?)
-    case string(String?)
-    case data(Data?)
-    case instance(InstanceStatus)
+let database: Database = ...
+let client = StateClient(database: database, encoder: JSONEncoder(), decoder: JSONDecoder)
+
+let lastSyncTime: Date = ...
+
+// Get new and deleted instances for a specific model
+let changedInstances = try client.instanceStatusUpdates(for: MyModel.self, after: lastSyncTime)
+
+// Get property updates for an instance
+let instanceId: Int = ...
+let changedProperties = try client.updates(for: instanceId, of: MyModel.self, after: lastSyncTime)
+```
+
+It can also be used to apply updates received from a remote to a local database:
+
+```swift
+let local: Database = ...
+let client = StateClient(database: local, encoder: JSONEncoder(), decoder: JSONDecoder)
+
+try client.apply(instanceUpdate: changedProperties)
+try client.apply(instanceUpdates: changedInstances)
+```
+
+All information to/from a `StateClient` is already encoded as `Data` (using the provided `encoder` and `decoder`), so it can directly be transmitted.
+
+### Instance Commands
+
+When a database is synchronized to one or more clients, there may be a need to perform actions on the instances.
+The `@Command` macro can provide this functionality, so that specific functions can be invoked on instances of remote databases.
+
+```swift
+@Model(id: 1)
+final class SystemPackage {
+    @Property(id: 1)
+    var name: String
+    
+    @Command(id: 2)
+    func install(version: String) {
+        // Install the specified version of the package
+    }
 }
 ```
 
-Something similar may be applicable to other storage solutions, but there are also other possible ways to preserve the type information.
+With this definition, it's possible to create a command on the client, and send it to the remote:
+
+```swift
+let instance: SystemPackage = ...
+let command = instance.installCommand(version: "1.0.0")
+let commandData = try command.encoded(using: JSONEncoder())
+```
+
+This data can be transmitted to the remote and executed there:
+
+```
+let database: Database = ...
+let client = StateClient(database: database, encoder: JSONEncoder(), decoder: JSONDecoder)
+try client.run(command: commandData)
+```
+
+The client will find the targeted instance, and run the `install()` function with the correct arguments.
 
 ### Migration
 
