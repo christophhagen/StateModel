@@ -322,7 +322,7 @@ extension ModelMacro: MemberMacro {
         functionLines.append("try update.updateStatus()")
         let functionContent = functionLines.joined(separator: "\n    ")
         return """
-            \(raw: access)func apply(update: InstanceUpdateExecutor) throws {
+            \(raw: access)func apply(update: InstanceUpdateExecutor) throws(StateError) {
                 \(raw: functionContent)
             }
             """
@@ -340,7 +340,7 @@ extension ModelMacro: MemberMacro {
     private static func createCommandExecutionFunction(with commands: [CommandDefinition], access: String) -> DeclSyntax {
         let cases = commands.map { "case .\($0.name): try \($0.name)(command: command)" }.joined(separator: "\n")
         return """
-            \(raw: access)func execute(command: CommandExecutor) throws {
+            \(raw: access)func execute(command: CommandExecutor) throws(StateError) {
                 let commandId: CommandId = try command.commandId()
 
                 switch commandId {

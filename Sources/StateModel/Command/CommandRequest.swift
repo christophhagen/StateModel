@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StateCommand {
+public struct CommandRequest {
 
     public let path: Path
 
@@ -16,33 +16,33 @@ public struct StateCommand {
      - Parameter property: The id of the argument.
      - Throws: `StateError.missingArgument`, if no data for the argument exists.
      */
-    public func argument(for property: PropertyKey) throws -> Data {
+    public func argument(for property: PropertyKey) throws(StateError) -> Data {
         guard let encoded = arguments[property] else {
-            throw StateError.missingArgument(property)
+            throw StateError.missingArgument(id: property)
         }
         return encoded
     }
 }
 
-extension StateCommand: Equatable {
+extension CommandRequest: Equatable {
     
 }
 
-extension StateCommand: Encodable {
+extension CommandRequest: Encodable {
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.unkeyedContainer()
-        try container.encode(ClientDataType.command)
+        try container.encode(TransmissionDataType.command)
         try container.encode(path)
         try container.encode(arguments)
     }
 }
 
-extension StateCommand: Decodable {
+extension CommandRequest: Decodable {
 
     public init(from decoder: any Decoder) throws {
         var container = try decoder.unkeyedContainer()
-        guard try container.decode(ClientDataType.self) == .command else {
+        guard try container.decode(TransmissionDataType.self) == .command else {
             throw StateError.invalidDataSupplied
         }
         self.path = try container.decode()

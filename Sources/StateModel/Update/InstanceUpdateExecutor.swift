@@ -6,7 +6,7 @@ public struct InstanceUpdateExecutor {
 
     private let instance: InstanceKey
 
-    private let properties: [PropertyChange]
+    private let properties: [PropertyUpdate]
 
     private let decoder: any GenericDecoder
 
@@ -14,7 +14,7 @@ public struct InstanceUpdateExecutor {
 
     init(model: ModelKey,
          instance: InstanceKey,
-         properties: [PropertyChange],
+         properties: [PropertyUpdate],
          decoder: any GenericDecoder,
          database: any Database
     ) {
@@ -25,23 +25,23 @@ public struct InstanceUpdateExecutor {
         self.database = database
     }
 
-    public func update<P: RawRepresentable, T: DatabaseValue>(_ property: P, of type: T.Type) throws where P.RawValue == PropertyKey {
+    public func update<P: RawRepresentable, T: DatabaseValue>(_ property: P, of type: T.Type) throws(StateError) where P.RawValue == PropertyKey {
         try set(T.self, for: property.rawValue)
     }
 
-    public func update<P: RawRepresentable, M: ModelProtocol>(_ property: P, of type: M?.Type) throws where P.RawValue == PropertyKey {
+    public func update<P: RawRepresentable, M: ModelProtocol>(_ property: P, of type: M?.Type) throws(StateError) where P.RawValue == PropertyKey {
         try set(Int?.self, for: property.rawValue)
     }
 
-    public func update<P: RawRepresentable, S: SequenceInitializable>(_ property: P, of type: S.Type) throws where P.RawValue == PropertyKey {
+    public func update<P: RawRepresentable, S: SequenceInitializable>(_ property: P, of type: S.Type) throws(StateError) where P.RawValue == PropertyKey {
         try set([Int].self, for: property.rawValue)
     }
 
-    public func updateStatus() throws {
+    public func updateStatus() throws(StateError) {
         try set(InstanceStatus.self, for: PropertyKey.instanceId)
     }
 
-    private func decode<D: Decodable>(_ type: D.Type = D.self, for property: PropertyKey) throws -> (date: Date, value: D)? {
+    private func decode<D: Decodable>(_ type: D.Type = D.self, for property: PropertyKey) throws(StateError) -> (date: Date, value: D)? {
         guard let update = properties.first(where: { $0.id == property }) else {
             return nil
         }
@@ -49,11 +49,11 @@ public struct InstanceUpdateExecutor {
             let value = try decoder.decode(D.self, from: update.data)
             return (update.date, value)
         } catch {
-            throw StateError.propertyDecodingFailed(property, error)
+            throw StateError.propertyDecodingFailed(property: property, error: error.localizedDescription)
         }
     }
 
-    private func set<D: DatabaseValue>(_ type: D.Type, for property: PropertyKey) throws {
+    private func set<D: DatabaseValue>(_ type: D.Type, for property: PropertyKey) throws(StateError) {
         guard let (date, value) = try decode(D.self, for: property) else {
             return
         }

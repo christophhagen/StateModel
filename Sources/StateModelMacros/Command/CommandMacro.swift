@@ -61,7 +61,7 @@ public struct CommandMacro: PeerMacro {
         functionLines.append("self.\(command.name)(\(parameterList))")
         let functionContent = functionLines.joined(separator: "\n    ")
         return """
-        private func \(raw: command.name)(command: CommandExecutor) throws {
+        private func \(raw: command.name)(command: CommandExecutor) throws(StateError) {
             \(raw: functionContent)
         }
         """

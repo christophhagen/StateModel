@@ -1,6 +1,6 @@
 import Foundation
 
-extension HistoryDatabase {
+extension TimestampedDatabase {
 
     // MARK: Database functions
 
@@ -9,8 +9,20 @@ extension HistoryDatabase {
      - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    public func get<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)? {
-        get(path, at: nil)
+    public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
+        guard let data: (value: Value, date: Date) = get(path) else {
+            return nil
+        }
+        return data.value
+    }
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter path: The path of the property
+     */
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path) {
+        set(value, for: path, at: nil)
     }
 
     /**
@@ -26,13 +38,11 @@ extension HistoryDatabase {
      - Parameter predicate: The conversion function to call for each result of the search
      - Parameter instance: The instance id of the path that contained the `status`
      - Parameter status: The instance status of the path.
-     - Parameter date: The timestamp of the instance status
      - Returns: The list of all search results that were returned by the `predicate`
      */
-    public func all<T>(
-        model: ModelKey,
-        where predicate: (_ instance: InstanceKey, _ status: InstanceStatus, _ date: Date) -> T?
-    ) -> [T] {
-        all(model: model, at: nil, where: predicate)
+    public func all<T>(model: ModelKey, where predicate: (_ instance: InstanceKey, _ status: InstanceStatus) -> T?) -> [T] {
+        all(model: model) { instance, status, _ in
+            predicate(instance, status)
+        }
     }
 }

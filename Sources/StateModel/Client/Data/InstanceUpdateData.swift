@@ -5,4 +5,4 @@ import Foundation
 
  This data is produced by ``StateClient.updates(for:model:after:)`` and consumed by ``StateClient.apply(instanceUpdate:)``
  */
-public typealias InstanceData = Data
+public typealias InstanceUpdateData = Data

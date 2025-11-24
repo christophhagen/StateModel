@@ -27,12 +27,20 @@ public final class InstanceUpdateBuilder: Database {
         Path(model: model, instance: instance, property: property.rawValue)
     }
 
-    func update() throws -> InstanceUpdate {
-        let properties = try properties.map { (key, value) in
-            let data = try value.conversion(encoder)
-            return PropertyChange(id: key, date: value.date, data: data)
+    func update() -> InstanceUpdate {
+        var failedProperties: [PropertyKey] = []
+        let properties: [PropertyUpdate] = properties.compactMap { (key, value) in
+            guard let data = try? value.conversion(encoder) else {
+                failedProperties.append(key)
+                return nil
+            }
+            return PropertyUpdate(id: key, date: value.date, data: data)
         }
-        return .init(model: model, instance: instance, properties: properties)
+        return .init(
+            model: model,
+            instance: instance,
+            properties: properties,
+            failedProperties: failedProperties)
     }
 
     // MARK: Database

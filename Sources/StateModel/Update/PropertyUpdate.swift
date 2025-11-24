@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PropertyChange {
+public struct PropertyUpdate {
 
     public let id: PropertyKey
 
@@ -19,11 +19,11 @@ public struct PropertyChange {
     }
 }
 
-extension PropertyChange: Equatable {
+extension PropertyUpdate: Equatable {
 
 }
 
-extension PropertyChange: Encodable {
+extension PropertyUpdate: Encodable {
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.unkeyedContainer()
@@ -33,7 +33,7 @@ extension PropertyChange: Encodable {
     }
 }
 
-extension PropertyChange: Decodable {
+extension PropertyUpdate: Decodable {
 
     public init(from decoder: any Decoder) throws {
         var container = try decoder.unkeyedContainer()

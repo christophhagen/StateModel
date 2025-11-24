@@ -1,6 +1,7 @@
 import Foundation
 
 extension Array {
+    
     /// Reposition the element at `index` to maintain sort order.
     /// Searches backward first, then forward, and performs a single move.
     mutating func resortElement(

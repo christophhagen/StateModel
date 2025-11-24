@@ -5,4 +5,4 @@ import Foundation
 
  This data is produced by `StateClient.encode(command:)` and consumed `StateClient.run(command:)`
  */
-public typealias CommandData = Data
+public typealias CommandRequestData = Data

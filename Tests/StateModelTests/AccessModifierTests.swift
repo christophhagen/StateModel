@@ -30,7 +30,7 @@ internal final class InternalModel {
 #if canImport(StateModelMacros)
 import StateModelMacros
 
-nonisolated(unsafe) private let testMacros: [String: Macro.Type] = [
+private let testMacros: [String: Macro.Type] = [
     "Model" : ModelMacro.self
 ]
 #endif
@@ -122,7 +122,7 @@ final class AccessModifierTests: XCTestCase {
                     _ = status
                 }
             
-                public func apply(update: InstanceUpdateExecutor) throws {
+                public func apply(update: InstanceUpdateExecutor) throws(StateError) {
                     try update.update(PropertyId.some, of: Int.self)
                     try update.updateStatus()
                 }
@@ -226,7 +226,7 @@ final class AccessModifierTests: XCTestCase {
                     _ = status
                 }
             
-                fileprivate func apply(update: InstanceUpdateExecutor) throws {
+                fileprivate func apply(update: InstanceUpdateExecutor) throws(StateError) {
                     try update.update(PropertyId.some, of: Int.self)
                     try update.updateStatus()
                 }

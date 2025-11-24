@@ -9,7 +9,7 @@ import Testing
 #if canImport(StateModelMacros)
 import StateModelMacros
 
-nonisolated(unsafe) private let testMacros: [String: Macro.Type] = [
+private let testMacros: [String: Macro.Type] = [
     "Model" : ModelMacro.self,
     "Command" : CommandMacro.self
 ]
@@ -124,7 +124,7 @@ final class MacroExpansionTests: XCTestCase {
                     _ = status
                 }
             
-                func apply(update: InstanceUpdateExecutor) throws {
+                func apply(update: InstanceUpdateExecutor) throws(StateError) {
                     try update.update(PropertyId.some, of: Int.self)
                     try update.update(PropertyId.nested, of: NestedModel!.self)
                     try update.update(PropertyId.list, of: [NestedModel].self)
@@ -168,7 +168,7 @@ final class MacroExpansionTests: XCTestCase {
                 return builder
             }
             
-            private func doSomething(command: CommandExecutor) throws {
+            private func doSomething(command: CommandExecutor) throws(StateError) {
                 let arg1: Int = try command.argument(for: 1)
                 let arg2: Double = try command.argument(for: 2)
                 let arg3: String = try command.argument(for: 3)
@@ -205,7 +205,7 @@ final class MacroExpansionTests: XCTestCase {
                     return builder
                 }
 
-                private func doSomething(command: CommandExecutor) throws {
+                private func doSomething(command: CommandExecutor) throws(StateError) {
                     let arg1: Int = try command.argument(for: 1)
                     let arg2: Double = try command.argument(for: 2)
                     let arg3: String = try command.argument(for: 3)
@@ -260,7 +260,7 @@ final class MacroExpansionTests: XCTestCase {
                     _ = status
                 }
             
-                func apply(update: InstanceUpdateExecutor) throws {
+                func apply(update: InstanceUpdateExecutor) throws(StateError) {
                     try update.updateStatus()
                 }
             
@@ -268,7 +268,7 @@ final class MacroExpansionTests: XCTestCase {
                     case doSomething = 123
                 }
             
-                func execute(command: CommandExecutor) throws {
+                func execute(command: CommandExecutor) throws(StateError) {
                     let commandId: CommandId = try command.commandId()
             
                     switch commandId {

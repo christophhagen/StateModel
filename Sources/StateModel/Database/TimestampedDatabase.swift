@@ -9,7 +9,7 @@ import Foundation
  - Get a value for a property
  - Select all instances of a model with a specific property key
  */
-public protocol HistoryDatabase: TimestampedDatabase {
+public protocol TimestampedDatabase: Database {
 
     // MARK: Properties
 
@@ -19,7 +19,15 @@ public protocol HistoryDatabase: TimestampedDatabase {
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-     func get<Value>(_ path: Path, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue
+    func get<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)?
+
+    /**
+     Set the value for a specific property.
+     - Parameter value: The new value to set for the property
+     - Parameter path: The path of the property
+     - Parameter date: The date with which the value is associated, `nil` indicates the current time.
+     */
+    func set<Value: DatabaseValue>(_ value: Value, for path: Path, at date: Date?)
 
     /**
      Provide specific properties in the database to a conversion function.
@@ -40,7 +48,6 @@ public protocol HistoryDatabase: TimestampedDatabase {
      */
     func all<T>(
         model: ModelKey,
-        at date: Date?,
         where predicate: (_ instance: InstanceKey, _ status: InstanceStatus, _ date: Date) -> T?
     ) -> [T]
 }
