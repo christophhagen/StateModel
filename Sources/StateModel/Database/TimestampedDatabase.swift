@@ -19,7 +19,7 @@ public protocol TimestampedDatabase: Database {
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    func get<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)?
+    func get<Value: DatabaseValue>(_ path: Path) -> Timestamped<Value>?
 
     /**
      Set the value for a specific property.

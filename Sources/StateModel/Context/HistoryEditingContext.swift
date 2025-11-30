@@ -22,8 +22,8 @@ public final class HistoryEditingContext: Database {
     }
 
     public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
-        let previous: (value: Value, date: Date)? = database.get(path, at: contextStartDate)
-        guard let edited: (value: Value, date: Date) = getFromCache(path) else {
+        let previous: Timestamped<Value>? = database.get(path, at: contextStartDate)
+        guard let edited: Timestamped<Value> = getFromCache(path) else {
             return previous?.value
 
         }
@@ -51,7 +51,7 @@ public final class HistoryEditingContext: Database {
         let existing: [T] = database.all(model: model, at: contextStartDate) { instance, status, timestamp in
             handledIds.insert(instance)
             let path = Path(model: model, instance: instance)
-            guard let edited: (value: InstanceStatus, date: Date) = getFromCache(path),
+            guard let edited: Timestamped<InstanceStatus> = getFromCache(path),
                   edited.date >= timestamp else {
                 return predicate(instance, status)
             }
@@ -71,14 +71,14 @@ public final class HistoryEditingContext: Database {
         return existing + additions
     }
 
-    private func getFromCache<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)? {
+    private func getFromCache<Value: DatabaseValue>(_ path: Path) -> Timestamped<Value>? {
         guard let changed = modifiedValues[path] else {
             return nil
         }
         guard let value = changed.value as? Value else {
             return nil
         }
-        return (value, changed.date)
+        return .init(value: value, date: changed.date)
     }
 
     /**

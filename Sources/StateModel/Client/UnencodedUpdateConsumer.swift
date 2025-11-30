@@ -61,7 +61,7 @@ public struct UnencodedUpdateConsumer {
         guard modelMap(model) != nil else {
             throw StateError.unknownModel(id: model)
         }
-        guard let database = database as? HistoryDatabase else {
+        guard let database = database as? TimestampedDatabase else {
             for update in instanceUpdates.updates {
                 let path = Path(model: model, instance: update.instance)
                 database.set(update.status, for: path)

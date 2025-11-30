@@ -10,7 +10,7 @@ extension TimestampedDatabase {
      - Returns: The value of the property, if one exists
      */
     public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
-        guard let data: (value: Value, date: Date) = get(path) else {
+        guard let data: Timestamped<Value> = get(path) else {
             return nil
         }
         return data.value

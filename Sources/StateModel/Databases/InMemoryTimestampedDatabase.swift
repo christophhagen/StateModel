@@ -3,13 +3,13 @@ import Foundation
 /**
  A simple database implementation that only caches the latest values in memory
  */
-public final class InMemoryHistoryDatabase: HistoryDatabase {
+public final class InMemoryTimestampedDatabase {
 
     /// A simple in-memory cache
     /// The values are sorted by their timestamps, the last value is the most recent
     /// The values are encoded, since otherwise it's not possible to insert values from other databases,
     /// because the type is only known when accessing the values
-    private var cache: [Path: [EncodedSample]] = [:]
+    private var cache: [Path: EncodedSample] = [:]
 
     private var history: [Record] = []
 
@@ -30,39 +30,6 @@ public final class InMemoryHistoryDatabase: HistoryDatabase {
 
     private func decode<T>(_ data: Data) -> T? where T: Decodable {
         try? decoder.decode(T.self, from: data)
-    }
-
-    // MARK: Properties
-
-    public func get<Value: DatabaseValue>(_ path: Path, at date: Date?) -> Timestamped<Value>? {
-        guard let raw = cache[path]?.at(date) else {
-            return nil
-        }
-        guard let value: Value = decode(raw.data) else {
-            return nil
-        }
-        return .init(value: value, date: raw.timestamp)
-    }
-
-    public func set<Value: DatabaseValue>(_ value: Value, for path: Path, at date: Date?) {
-        let sample = EncodedSample(data: encode(value), timestamp: date)
-        // TODO: Prevent duplicates?
-        cache[path, default: []].insert(sample)
-        history.append(Record(path: path, sample: sample))
-    }
-
-    // MARK: Instances
-
-    public func all<T>(model: ModelKey, at date: Date?, where predicate: (InstanceKey, InstanceStatus, Date) -> T?) -> [T] {
-        cache.compactMap { (path, values) -> T? in
-            guard path.model == model,
-                  path.property == PropertyKey.instanceId,
-                  let sample = values.at(date),
-                  let value: InstanceStatus = decode(sample.data) else {
-                return nil
-            }
-            return predicate(path.instance, value, sample.timestamp)
-        }
     }
 
     // MARK: Change tracking
@@ -92,9 +59,40 @@ public final class InMemoryHistoryDatabase: HistoryDatabase {
     }
 
     private func insert(_ record: Record) {
-        if cache[record.path]?.contains(record.timestamp) ?? false {
-            return
+        cache[record.path] = record.sample
+    }
+}
+
+extension InMemoryTimestampedDatabase: TimestampedDatabase {
+
+    // MARK: Properties
+
+    public func get<Value: DatabaseValue>(_ path: Path) -> Timestamped<Value>? {
+        guard let raw = cache[path] else {
+            return nil
         }
-        cache[record.path, default: []].insert(record.sample)
+        guard let value: Value = decode(raw.data) else {
+            return nil
+        }
+        return .init(value: value, date: raw.timestamp)
+    }
+
+    public func set<Value: DatabaseValue>(_ value: Value, for path: Path, at date: Date?) {
+        let sample = EncodedSample(data: encode(value), timestamp: date)
+        cache[path] = sample
+        history.append(Record(path: path, sample: sample))
+    }
+
+    // MARK: Instances
+
+    public func all<T>(model: ModelKey, where predicate: (InstanceKey, InstanceStatus, Date) -> T?) -> [T] {
+        cache.compactMap { (path, sample) -> T? in
+            guard path.model == model,
+                  path.property == PropertyKey.instanceId,
+                  let value: InstanceStatus = decode(sample.data) else {
+                return nil
+            }
+            return predicate(path.instance, value, sample.timestamp)
+        }
     }
 }

@@ -9,7 +9,7 @@ extension HistoryDatabase {
      - Parameter path: The path of the property
      - Returns: The value of the property, if one exists
      */
-    public func get<Value: DatabaseValue>(_ path: Path) -> (value: Value, date: Date)? {
+    public func get<Value: DatabaseValue>(_ path: Path) -> Timestamped<Value>? {
         get(path, at: nil)
     }
 

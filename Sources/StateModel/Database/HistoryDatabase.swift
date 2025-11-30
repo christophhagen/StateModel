@@ -19,7 +19,7 @@ public protocol HistoryDatabase: TimestampedDatabase {
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-     func get<Value>(_ path: Path, at date: Date?) -> (value: Value, date: Date)? where Value: DatabaseValue
+     func get<Value>(_ path: Path, at date: Date?) -> Timestamped<Value>? where Value: DatabaseValue
 
     /**
      Provide specific properties in the database to a conversion function.

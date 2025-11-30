@@ -10,7 +10,7 @@ extension HistoryDatabase {
      - Parameter date: The date at which the value is requested, `nil` indicates the most recent value.
      - Returns: The value of the property, if one exists
      */
-    public func get<Value: DatabaseValue>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> (value: Value, date: Date)? {
+    public func get<Value: DatabaseValue>(model: ModelKey, instance: InstanceKey, property: PropertyKey, at date: Date?) -> Timestamped<Value>? {
         get(.init(model: model, instance: instance, property: property), at: date)
     }
 
@@ -51,7 +51,7 @@ extension HistoryDatabase {
      - Returns: The value of the property, if one exists
      */
     @inline(__always)
-    public func get<Value: DatabaseValue>(_ path: Path, at date: Date?, of type: Value.Type) -> (value: Value, date: Date)? {
+    public func get<Value: DatabaseValue>(_ path: Path, at date: Date?, of type: Value.Type) -> Timestamped<Value>? {
         get(path, at: date)
     }
 

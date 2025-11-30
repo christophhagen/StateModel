@@ -54,11 +54,11 @@ public final class InstanceUpdateBuilder: Database {
             return value
         }
 
-        guard let (value, saved) = database.get(path, at: nil, of: Value.self), saved > time else {
+        guard let timestamped = database.get(path, at: nil, of: Value.self), timestamped.date > time else {
             return nil
         }
-        properties[path.property] = (saved, { try $0.encode(value) })
-        return value
+        properties[path.property] = (timestamped.date, { try $0.encode(timestamped.value) })
+        return timestamped.value
     }
 
     public func set<Value>(_ value: Value, for path: Path) where Value : Decodable, Value : Encodable {
