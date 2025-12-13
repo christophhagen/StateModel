@@ -44,4 +44,33 @@ struct PropertyTests {
         model2.a = model.a
         #expect(model2.a == 5)
     }
+
+    @Test("Complex default")
+    func testComplexDefault() {
+        let database = TestDatabase()
+
+        let color =  Color(red: 42, green: 42, blue: 42)
+
+        let model = ComplexModel.create(in: database, id: 123, color: color)
+        #expect(model.color == color)
+        #expect(model.color != Color.defaultValue)
+    }
+}
+
+@Model(id: 1)
+private class ComplexModel {
+
+    @Property(id: 1)
+    var color: Color = .defaultValue
+}
+
+private struct Color: Codable, Equatable {
+
+    let red: UInt8
+    let green: UInt8
+    let blue: UInt8
+
+    static var defaultValue: Color {
+        .init(red: 1, green: 2, blue: 3)
+    }
 }

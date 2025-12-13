@@ -52,7 +52,7 @@ public class ObservableDatabase: Database, ObservableObject {
 
     // MARK: Instance caching and notification
 
-    private typealias ObservedModel = ObservableObject & ModelInstance
+    private typealias ObservedModel = ModelProtocol
 
     private struct WeakModel {
         weak var value: (any ObservedModel)?
@@ -91,7 +91,7 @@ public class ObservableDatabase: Database, ObservableObject {
         let model = T.modelId
         if let existing = getCached(model: model, instance: instance) as? T {
             if notifyExisting {
-                (existing.objectWillChange as? ObservableObjectPublisher)?.send()
+                notify(existing)
             }
             return existing
         }
@@ -128,7 +128,7 @@ public class ObservableDatabase: Database, ObservableObject {
             storage[id] = nil
             return
         }
-        (object.objectWillChange as? ObservableObjectPublisher)?.send()
+        notify(object)
     }
 
     private func cleanup() {
@@ -298,7 +298,7 @@ public class ObservableDatabase: Database, ObservableObject {
     public func delete<Instance: ModelProtocol>(_ instance: Instance) {
         set(InstanceStatus.deleted, model: Instance.modelId, instance: instance.id, property: PropertyKey.instanceId)
         // Notify instance about deletion status
-        (instance.objectWillChange as? ObservableObjectPublisher)?.send()
+        notify(instance)
     }
 
     /**
@@ -319,5 +319,21 @@ public class ObservableDatabase: Database, ObservableObject {
             }
             return instance
         }
+    }
+
+    private func notify(_ object: any ModelProtocol) {
+        // TODO: Notify on main thread?
+        (object.objectWillChange as? ObservableObjectPublisher)?.send()
+    }
+}
+
+final class TestClass: ObservableObject {
+
+
+    @Published private var toggle: Bool = false
+
+    @MainActor
+    func notify() {
+        self.toggle.toggle()
     }
 }
