@@ -59,6 +59,7 @@ Then use your models like any other classes, while the model logic takes care of
    * [Deleted objects](#references-to-deleted-objects)
    * [Queries](#queries)
  * [Additional features](#additional-features)
+   * [Caching](#caching)
    * [History view](#history-view)
    * [Editing contexts](#editing-contexts)
    * [Synchronization](#synchronization)
@@ -454,6 +455,19 @@ This is similar to how SwiftData queries can be modified.
 Internally, the query is recomputed when a new descriptor is provided (every call to `QueryDescriptor.init` creates a unique instance).
 
 ## Additional features
+
+### Caching
+
+It's easy to add caching to databases. For simple cases, it's possible combine a database with a cache using `CachedDatabase`:
+
+```swift
+let database = MyDatabase()
+let cache = MaximumCountCache(maxCount: 1000)
+let combined = CachedDatabase(wrapping: database, cache: cache)
+```
+
+The resulting database can then be used as it normally would.
+There is a simple `MaximumCountCache` provided, but more elaborate caching can be done by implementing `DatabaseCache` manually.
 
 ### History view
 
