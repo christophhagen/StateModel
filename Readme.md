@@ -513,33 +513,57 @@ Changes made to the database will then not appear in the context.
 ### Synchronization
 
 There are use cases where information is stored in a central database, and one or more clients need to retrieve information from it.
-The library provides a `StateClient` that can be used to extract the necessary information from the database:
+The library provides a `UpdateConsumer` and `RequestProcessor` to exchange information between two databases.
+To use it, a mapping function is needed to tell the system which models to target for specific model ids.
 
 ```swift
-let database: Database = ...
-let client = StateClient(database: database, encoder: JSONEncoder(), decoder: JSONDecoder)
+/// Provide the consumer and producer with the types for each model
+func mapIdToModel(modelId: Int) -> (any ModelProtocol.Type)? {
+    switch modelId {
+    case 1: return MyModel.self
+    default: return nil
+    }
+}
+```
 
+For a "local" side consuming the updates and a "remote" side providing them, a simple setup would be:
+```swift
+// Local client
+let localDB: Database = ...
+let consumer = UpdateConsumer(database: localDB, encoder: JSONEncoder(), decoder: JSONDecoder, modelMap: mapIdToModel)
+
+// Remote client
+let remoteDB: Database = ...
+let producer = RequestProcessor(database: remoteDB, encoder: JSONEncoder(), decoder: JSONDecoder(), modelMap: mapIdToModel)
+```
+
+Then it's possible to request and transfer new or changed instances:
+```swift
 let lastSyncTime: Date = ...
 
-// Get new and deleted instances for a specific model
-let changedInstances = try client.instanceStatusUpdates(for: MyModel.self, after: lastSyncTime)
+// Prepare a request for changes instances on the client
+let request = try consumer.instanceStatusRequest(for: MyModel.self, after: lastSyncTime)
 
-// Get property updates for an instance
-let instanceId: Int = ...
-let changedProperties = try client.updates(for: instanceId, of: MyModel.self, after: lastSyncTime)
+// Process the request on the server
+let response = try producer.process(instanceStatusRequest: request)
+
+// Process the response on the client
+try consumer.apply(instanceUpdates: update)
 ```
 
-It can also be used to apply updates received from a remote to a local database:
+It's also possible to request property updates for a specific instance:
 
 ```swift
-let local: Database = ...
-let client = StateClient(database: local, encoder: JSONEncoder(), decoder: JSONDecoder)
+let instanceId: Int = ...
+let request = try consumer.instanceUpdateRequest(for: instanceId, of: MyModel.self, after: lastSyncTime)
 
-try client.apply(instanceUpdate: changedProperties)
-try client.apply(instanceUpdates: changedInstances)
+let response = producer.process(instanceUpdateRequest: request)
+
+try consumer.apply(instanceUpdate: response)
 ```
 
-All information to/from a `StateClient` is already encoded as `Data` (using the provided `encoder` and `decoder`), so it can directly be transmitted.
+There are also functions to get all updates of a specific model (see `UpdateConsumer.modelUpdateRequest()`), which allows repeated requests until all updates are received.
+All information to/from `UpdateConsumer` and `RequestProcessor` is already encoded as `Data` (using the provided `encoder` and `decoder`), so it can be transmitted directly.
 
 ### Instance Commands
 
