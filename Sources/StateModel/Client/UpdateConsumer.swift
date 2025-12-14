@@ -67,15 +67,40 @@ public struct UpdateConsumer {
 
     // MARK: All instance updates
 
-    public func modelUpdateRequest<T: ModelProtocol>(for model: T.Type, after timestamp: Date?, limit: Int, startingAt instance: InstanceKey? = nil) throws -> ModelUpdateRequestData {
+    /**
+     Request all updates for a specific model.
+
+     The response of a producer will always include all updates of a specific instance, so that queries can be completed at that point.
+     When continuing a
+     - Parameter model: The model for which to request updates.
+     - Parameter timestamp: The point in time after which updates should be considered.
+     - Parameter limit: The maximum number of updates to add in the response.
+     - Parameter instance: The instance to start at, to continue previous requests.
+     - Throws: `StateError.encodingFailed`, if the request could not be encoded.
+     */
+    public func modelUpdateRequest<T: ModelProtocol>(for model: T.Type, after timestamp: Date?, limit: Int, startingAt instance: InstanceKey? = nil) throws(StateError) -> ModelUpdateRequestData {
         try modelUpdateRequest(for: T.modelId, after: timestamp, limit: limit, startingAt: instance)
     }
 
-    public func modelUpdateRequest(for model: ModelKey, after timestamp: Date?, limit: Int, startingAt instance: InstanceKey? = nil) throws -> ModelUpdateRequestData {
+    /**
+     Request all updates for a specific model.
+
+     The response of a producer will always include all updates of a specific instance, so that queries can be completed at that point.
+     When continuing a
+     - Parameter model: The model id for which to request updates.
+     - Parameter timestamp: The point in time after which updates should be considered.
+     - Parameter limit: The maximum number of updates to add in the response.
+     - Parameter instance: The instance to start at, to continue previous requests.
+     - Throws: `StateError.encodingFailed`, if the request could not be encoded.
+     */
+    public func modelUpdateRequest(for model: ModelKey, after timestamp: Date?, limit: Int, startingAt instance: InstanceKey? = nil) throws(StateError) -> ModelUpdateRequestData {
         let request = consumer.modelUpdateRequest(for: model, after: timestamp, limit: limit, startingAt: instance)
         return try encode(request)
     }
 
+    /**
+     Apply updates requested via `modelUpdateRequest()`.
+     */
     public func apply(modelUpdates: ModelUpdateData) throws -> InstanceKey? {
         let decoded: ModelUpdate = try decode(modelUpdates)
         return try consumer.apply(modelUpdates: decoded)
