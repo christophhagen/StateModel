@@ -12,3 +12,22 @@ public struct Timestamped<Value> {
         self.date = date
     }
 }
+
+extension Timestamped: Codable where Value: Codable {
+
+}
+
+extension Timestamped: Equatable where Value: Equatable {
+
+}
+
+extension Timestamped: Hashable where Value: Hashable {
+
+}
+
+extension Timestamped: CustomStringConvertible where Value: CustomStringConvertible {
+
+    public var description: String {
+        "Timestamped(value: \(value), date: \(date))"
+    }
+}

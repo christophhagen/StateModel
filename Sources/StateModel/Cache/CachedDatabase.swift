@@ -2,7 +2,7 @@
 /**
  A simple database wrapper that uses a cache to reduce queries to the database.
  */
-public final class CachedDatabase: Database {
+public final class CachedDatabase {
 
     public let database: any Database
 
@@ -19,6 +19,9 @@ public final class CachedDatabase: Database {
         self.database = database
         self.cache = cache
     }
+}
+
+extension CachedDatabase: Database {
 
     public func get<Value: DatabaseValue>(_ path: Path) -> Value? {
         cache.get(path) ?? database.get(path)
