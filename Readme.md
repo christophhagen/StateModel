@@ -668,3 +668,6 @@ class Item {
 
 }
 ```
+
+This is also useful when providing a `modelMap` to `UpdateConsumer` or `RequestProcessor`.
+
