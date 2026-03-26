@@ -671,3 +671,17 @@ class Item {
 
 This is also useful when providing a `modelMap` to `UpdateConsumer` or `RequestProcessor`.
 
+## Roadmap
+
+- Add support for history data viewing on instances
+- Support `@Command` for `static` functions that work on a model type instead of an instance.
+- Add `@Property(persistance: PersistanceMode)` for properties
+  - `.external`, if only the most recent value should be stored separately due to size (e.g. in a file)
+  - `.ephemeral` if the data may be lost once the database is closed
+  - `.mostRecent` where history is not needed
+  - `.withHistory`, default mode
+- Add `writeStrategy` to property (`onChange`, `always`)
+- Extend models with `.inEditingContext()` that returns the same model but in an editing context
+  - How can the context be saved? Provide an `editingContext: EditingContext?` property on models?
+- Allow query filtering by path: `@Query(filter: \.name)`
+- New library that uses string keys, so that models are even simpler to define
