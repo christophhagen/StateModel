@@ -222,7 +222,7 @@ struct CacheTests {
         database.set(123, for: path)
 
         #expect(cache.numberOfSets == 1)
-        #expect(cache.numberOfGets == 0)
+        #expect(cache.numberOfGets == 1) // Check cache for newer value before update
         #expect(uncached.numberOfSets == 1)
         #expect(uncached.numberOfGets == 0)
 
@@ -231,7 +231,7 @@ struct CacheTests {
         #expect(queried == 123)
 
         #expect(cache.numberOfSets == 1)
-        #expect(cache.numberOfGets == 1)
+        #expect(cache.numberOfGets == 2) // Increment due to cache check
         #expect(uncached.numberOfSets == 1)
         #expect(uncached.numberOfGets == 0)
 
@@ -240,7 +240,7 @@ struct CacheTests {
         #expect(queried2 == nil)
 
         #expect(cache.numberOfSets == 1)
-        #expect(cache.numberOfGets == 2)
+        #expect(cache.numberOfGets == 3) // Incremented due to cache check
         #expect(uncached.numberOfSets == 1)
         #expect(uncached.numberOfGets == 1)
     }
@@ -273,7 +273,6 @@ struct CacheTests {
         #expect(uncached.numberOfSets == 1)
         #expect(uncached.numberOfGets == 0)
 
-        print("A")
         // Set a value in the future
         database.set(234, for: path, at: Date().addingTimeInterval(100))
         #expect(cache.numberOfSets == 2)
@@ -281,7 +280,6 @@ struct CacheTests {
         #expect(uncached.numberOfSets == 2) // Increment due to insert
         #expect(uncached.numberOfGets == 0)
 
-        print("B")
         let queried2: Int? = database.get(path)
         // We expect the future value to be returned from the cache
         #expect(queried2 == 234)

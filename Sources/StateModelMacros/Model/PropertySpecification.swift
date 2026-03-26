@@ -36,7 +36,14 @@ struct PropertySpecification {
         "\(name) = \(usableDefaultValue ?? "nil")"
     }
 
-    private var typeForParameter: String {
+    var typeForUpdate: String {
+        guard type.hasSuffix("!") else {
+            return type
+        }
+        return type.dropLast("!".count) + "?"
+    }
+
+    var typeForParameter: String {
         guard type.hasSuffix("!") else {
             return type
         }

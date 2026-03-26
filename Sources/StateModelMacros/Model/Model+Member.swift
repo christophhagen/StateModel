@@ -317,7 +317,7 @@ extension ModelMacro: MemberMacro {
     private static func applyUpdatesFunction(with properties: [PropertySpecification], access: String) -> DeclSyntax {
         var functionLines: [String] = []
         for property in properties {
-            functionLines.append("try update.update(PropertyId.\(property.name), of: \(property.type).self)")
+            functionLines.append("try update.update(PropertyId.\(property.name), of: \(property.typeForUpdate).self)")
         }
         functionLines.append("try update.updateStatus()")
         let functionContent = functionLines.joined(separator: "\n    ")

@@ -126,7 +126,7 @@ final class MacroExpansionTests: XCTestCase {
             
                 func apply(update: InstanceUpdateExecutor) throws(StateError) {
                     try update.update(PropertyId.some, of: Int.self)
-                    try update.update(PropertyId.nested, of: NestedModel!.self)
+                    try update.update(PropertyId.nested, of: NestedModel?.self)
                     try update.update(PropertyId.list, of: [NestedModel].self)
                     try update.updateStatus()
                 }
