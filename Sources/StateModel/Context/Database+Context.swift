@@ -11,6 +11,15 @@ extension Database {
     public func createEditingContext() -> EditingContext {
         .init(database: self)
     }
+
+    /**
+     Get an instance from a different database in this database.
+     - Parameter instance: The instance to transfer to this context
+     - Returns: A reference to the instance in the current database, if it exists.
+     */
+    public func resolve<Instance: ModelProtocol>(_ instance: Instance) -> Instance? {
+        get(id: instance.id)
+    }
 }
 
 extension HistoryDatabase {
