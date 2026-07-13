@@ -17,7 +17,6 @@ private class CacheTestDatabase: HistoryDatabase {
     
     func get<Value: DatabaseValue>(_ path: Path, at date: Date?) -> Timestamped<Value>? {
         numberOfGets += 1
-        print("DB: \(path) at \(date)")
         return db.get(path, at: date)
     }
     

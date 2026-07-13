@@ -203,7 +203,7 @@ extension ModelMacro: MemberMacro {
     private static func databaseReference(access: String) -> DeclSyntax {
         """
         /// The reference to the database to which this object is linked
-        \(raw: access)unowned let database: Database
+        \(raw: access)unowned let database: any Database
         """
     }
 
@@ -223,7 +223,7 @@ extension ModelMacro: MemberMacro {
          - Note: This initializer should never be used directly. Create object through the database functions
          */
         @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-        \(raw: access)required init(database: Database, id: InstanceKey) {
+        \(raw: access)required init(database: any Database, id: InstanceKey) {
             self.database = database
             self.id = id
         }
@@ -241,7 +241,7 @@ extension ModelMacro: MemberMacro {
 
     private static func createFunction(with properties: [PropertySpecification], access: String) -> DeclSyntax {
         let params = properties.map { $0.functionParameterString }
-        let allParams = ["in database: Database", "id: InstanceKey"] + params
+        let allParams = ["in database: any Database", "id: InstanceKey"] + params
 
         var functionLines: [String] = []
         if !properties.isEmpty {

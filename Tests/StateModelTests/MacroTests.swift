@@ -53,7 +53,7 @@ final class MacroExpansionTests: XCTestCase {
                 static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
-                unowned let database: Database
+                unowned let database: any Database
 
                 /// The unique id of the instance
                 let id: InstanceKey
@@ -65,7 +65,7 @@ final class MacroExpansionTests: XCTestCase {
                  - Note: This initializer should never be used directly. Create object through the database functions
                  */
                 @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-                required init(database: Database, id: InstanceKey) {
+                required init(database: any Database, id: InstanceKey) {
                     self.database = database
                     self.id = id
                 }
@@ -80,7 +80,7 @@ final class MacroExpansionTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                  */
-                static func create(in database: Database, id: InstanceKey, some: Int = 1, nested: NestedModel, list: [NestedModel] = .init()) -> Self {
+                static func create(in database: any Database, id: InstanceKey, some: Int = 1, nested: NestedModel, list: [NestedModel] = .init()) -> Self {
                     func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
                         false
                     }
@@ -218,7 +218,7 @@ final class MacroExpansionTests: XCTestCase {
                 static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
-                unowned let database: Database
+                unowned let database: any Database
 
                 /// The unique id of the instance
                 let id: InstanceKey
@@ -230,7 +230,7 @@ final class MacroExpansionTests: XCTestCase {
                  - Note: This initializer should never be used directly. Create object through the database functions
                  */
                 @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-                required init(database: Database, id: InstanceKey) {
+                required init(database: any Database, id: InstanceKey) {
                     self.database = database
                     self.id = id
                 }
@@ -245,7 +245,7 @@ final class MacroExpansionTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                  */
-                static func create(in database: Database, id: InstanceKey) -> Self {
+                static func create(in database: any Database, id: InstanceKey) -> Self {
                     database.create(id: id)
                 }
             

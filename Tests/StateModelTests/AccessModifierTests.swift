@@ -61,7 +61,7 @@ final class AccessModifierTests: XCTestCase {
                 public static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
-                public unowned let database: Database
+                public unowned let database: any Database
 
                 /// The unique id of the instance
                 public let id: InstanceKey
@@ -73,7 +73,7 @@ final class AccessModifierTests: XCTestCase {
                  - Note: This initializer should never be used directly. Create object through the database functions
                  */
                 @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-                public required init(database: Database, id: InstanceKey) {
+                public required init(database: any Database, id: InstanceKey) {
                     self.database = database
                     self.id = id
                 }
@@ -88,7 +88,7 @@ final class AccessModifierTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                  */
-                public static func create(in database: Database, id: InstanceKey, some: Int = 1) -> Self {
+                public static func create(in database: any Database, id: InstanceKey, some: Int = 1) -> Self {
                     func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
                         false
                     }
@@ -165,7 +165,7 @@ final class AccessModifierTests: XCTestCase {
                 fileprivate static let modelId: ModelKey = 1
 
                 /// The reference to the database to which this object is linked
-                fileprivate unowned let database: Database
+                fileprivate unowned let database: any Database
 
                 /// The unique id of the instance
                 fileprivate let id: InstanceKey
@@ -177,7 +177,7 @@ final class AccessModifierTests: XCTestCase {
                  - Note: This initializer should never be used directly. Create object through the database functions
                  */
                 @available(*, deprecated, message: "Models should be created by using `Database.create(id:)`")
-                fileprivate required init(database: Database, id: InstanceKey) {
+                fileprivate required init(database: any Database, id: InstanceKey) {
                     self.database = database
                     self.id = id
                 }
@@ -192,7 +192,7 @@ final class AccessModifierTests: XCTestCase {
                  - Parameter database: The database in which the instance is created.
                  - Parameter id: The unique id of the instance
                  */
-                fileprivate static func create(in database: Database, id: InstanceKey, some: Int = 1) -> Self {
+                fileprivate static func create(in database: any Database, id: InstanceKey, some: Int = 1) -> Self {
                     func areNotEqual<T>(_ a: T, _ b: T) -> Bool {
                         false
                     }
