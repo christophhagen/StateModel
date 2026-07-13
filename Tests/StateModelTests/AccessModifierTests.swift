@@ -81,7 +81,7 @@ final class AccessModifierTests: XCTestCase {
                 /**
                  The publisher to notify the object that the underlying data has changed.
                  */
-                public let objectWillChange = Publisher()
+                public let objectWillChange = createPublisher()
             
                 /**
                  Create a new instance of the model.
@@ -185,7 +185,7 @@ final class AccessModifierTests: XCTestCase {
                 /**
                  The publisher to notify the object that the underlying data has changed.
                  */
-                fileprivate let objectWillChange = Publisher()
+                fileprivate let objectWillChange = createPublisher()
             
                 /**
                  Create a new instance of the model.
@@ -245,3 +245,4 @@ final class AccessModifierTests: XCTestCase {
     #endif
     }
 }
+

@@ -18,3 +18,7 @@ import OpenCombine
 public typealias Publisher = OpenCombine.ObservableObjectPublisher
 
 #endif
+
+public func createPublisher() -> Publisher {
+    .init()
+}
