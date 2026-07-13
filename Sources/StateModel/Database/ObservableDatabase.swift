@@ -1,9 +1,4 @@
 import Foundation
-#if canImport(Combine)
-import Combine
-#else
-import OpenCombine
-#endif
 
 /**
  A database wrapper to enable the use of observable models.
@@ -323,17 +318,6 @@ public class ObservableDatabase: Database, ObservableObject {
 
     private func notify(_ object: any ModelProtocol) {
         // TODO: Notify on main thread?
-        (object.objectWillChange as? ObservableObjectPublisher)?.send()
-    }
-}
-
-final class TestClass: ObservableObject {
-
-
-    @Published private var toggle: Bool = false
-
-    @MainActor
-    func notify() {
-        self.toggle.toggle()
+        (object.objectWillChange as? Publisher)?.send()
     }
 }

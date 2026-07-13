@@ -235,7 +235,7 @@ extension ModelMacro: MemberMacro {
         /**
          The publisher to notify the object that the underlying data has changed.
          */
-        \(raw: access)let objectWillChange = ObservableObjectPublisher()
+        \(raw: access)let objectWillChange = Publisher()
         """
     }
 

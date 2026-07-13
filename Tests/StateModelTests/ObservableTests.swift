@@ -1,11 +1,6 @@
 import Foundation
 import Testing
 @testable import StateModel
-#if canImport(Combine)
-import Combine
-#else
-import OpenCombine
-#endif
 
 private typealias ObservableTestDatabase = InMemoryDatabase
 
@@ -182,21 +177,4 @@ struct ObservableTests {
         #expect(all.map { $0.a } == [10, 20, 30])
     }
 #endif
-}
-
-public func observeChange<O: ObservableObject>(
-    to object: O,
-    _ message: String? = nil,
-    trigger: () throws -> Void
-) async rethrows {
-    var cancellables: Set<AnyCancellable> = []
-    let comment = message.map { Comment.init(stringLiteral: $0) }
-    try await confirmation(comment) { confirm in
-        // Subscribe before triggering
-        object.objectWillChange
-            .sink { _ in confirm() }
-            .store(in: &cancellables)
-
-        try trigger()
-    }
 }

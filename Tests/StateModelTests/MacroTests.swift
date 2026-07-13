@@ -73,7 +73,7 @@ final class MacroExpansionTests: XCTestCase {
                 /**
                  The publisher to notify the object that the underlying data has changed.
                  */
-                let objectWillChange = ObservableObjectPublisher()
+                let objectWillChange = Publisher()
             
                 /**
                  Create a new instance of the model.
@@ -238,7 +238,7 @@ final class MacroExpansionTests: XCTestCase {
                 /**
                  The publisher to notify the object that the underlying data has changed.
                  */
-                let objectWillChange = ObservableObjectPublisher()
+                let objectWillChange = Publisher()
             
                 /**
                  Create a new instance of the model.
